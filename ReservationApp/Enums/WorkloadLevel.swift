@@ -8,12 +8,12 @@
 import Foundation
 import SwiftUI
 
-/// İş yoğunluğu seviyesi (AI tahmini için)
+/// Workload level (for AI prediction)
 enum WorkloadLevel: String, Codable {
-    case low = "low"            // Düşük
-    case medium = "medium"      // Orta
-    case high = "high"          // Yüksek
-    case veryHigh = "very_high" // Çok Yüksek
+    case low = "low"            // Low
+    case medium = "medium"      // Medium
+    case high = "high"          // High
+    case veryHigh = "very_high" // Very high
     
     var displayName: String {
         switch self {

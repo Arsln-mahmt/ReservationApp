@@ -7,10 +7,10 @@
 
 import Foundation
 
-/// Kullanıcı tipi - Müşteri veya İşletme
+/// User type - Customer or Business owner
 enum UserType: String, Codable, CaseIterable {
-    case customer = "customer"  // Müşteri (rezervasyon yapan)
-    case business = "business"  // İşletme (rezervasyon alan)
+    case customer = "customer"  // Customer (makes reservations)
+    case business = "business"  // Business (receives reservations)
     
     var displayName: String {
         switch self {

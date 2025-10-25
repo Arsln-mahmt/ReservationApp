@@ -8,13 +8,13 @@
 import Foundation
 import SwiftUI
 
-/// Rezervasyon durumu
+/// Reservation status
 enum ReservationStatus: String, Codable, CaseIterable {
-    case pending = "pending"        // Beklemede (henüz onaylanmadı)
-    case confirmed = "confirmed"    // Onaylandı
-    case completed = "completed"    // Tamamlandı
-    case cancelled = "cancelled"    // İptal edildi
-    case noShow = "no_show"        // Gelmedi
+    case pending = "pending"        // Pending (not yet confirmed)
+    case confirmed = "confirmed"    // Confirmed
+    case completed = "completed"    // Completed
+    case cancelled = "cancelled"    // Cancelled
+    case noShow = "no_show"        // No show
     
     var displayName: String {
         switch self {

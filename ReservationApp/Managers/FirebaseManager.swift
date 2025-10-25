@@ -16,9 +16,8 @@ class FirebaseManager {
     let storage = Storage.storage()
     
     private init() {
-        // Firestore settings (optional)
         let settings = FirestoreSettings()
-        settings.isPersistenceEnabled = true // Enable offline persistence
+        settings.isPersistenceEnabled = true
         db.settings = settings
         
         print("✅ FirebaseManager initialized")

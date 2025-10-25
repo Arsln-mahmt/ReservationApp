@@ -18,8 +18,8 @@ struct Constant {
     static let reservationsCollection = "reservations"
     static let reviewsCollection = "reviews"
     
-    // MARK: - API URLs (for AI service)
-    static let aiAPIURL = "https://your-ai-api.com/api/v1" // TODO: Replace with your FastAPI endpoint
+    // MARK: - API URLs (AI service)
+    static let aiAPIURL = "https://your-ai-api.com/api/v1" // Replace with your FastAPI endpoint
     
     // MARK: - Reservation Settings
     static let defaultReservationDuration = 60 // minutes

@@ -7,10 +7,10 @@
 
 import Foundation
 
-/// Uygulama sahne tipleri (hangi ekran gösterilecek)
+/// App scene types (which screen to display)
 enum AppSceneType {
-    case loading            // Yükleme ekranı
-    case authentication     // Giriş/Kayıt ekranı
-    case customerHome      // Müşteri ana sayfası
-    case businessDashboard // İşletme kontrol paneli
+    case splash               // Splash screen (first launch)
+    case authentication       // Login/Register screen
+    case customerHome         // Customer home screen
+    case businessDashboard    // Business dashboard
 }

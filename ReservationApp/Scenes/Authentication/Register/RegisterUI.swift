@@ -86,33 +86,31 @@ struct RegisterUI: View {
     
     // MARK: - Registration Form
     private var registrationFormView: some View {
-        GeometryReader { geometry in
-            ScrollView {
-                VStack(spacing: 0) {
-                    // Header with safe area handling
-                    headerSection(topInset: geometry.safeAreaInsets.top)
-                    
-                    // Form
-                    formSection
-                        .padding(.top, -40)
-                }
+        ScrollView {
+            VStack(spacing: 0) {
+                // Header with safe area handling
+                headerSection
+                
+                // Form
+                formSection
+                    .padding(.top, -40)
             }
-            .ignoresSafeArea(edges: .top)
         }
+        .ignoresSafeArea(edges: .top)
     }
     
-    private func headerSection(topInset: CGFloat) -> some View {
+    private var headerSection: some View {
         ZStack(alignment: .bottom) {
-            // Background gradient with proper height
+            // Background gradient
             LinearGradient.primaryGradient
-                .frame(height: 220 + topInset)
+                .ignoresSafeArea(edges: .top)
+                .frame(height: 280) // Fixed height that covers top area
                 .cornerRadius(30, corners: [.bottomLeft, .bottomRight])
             
             // Content
             VStack(spacing: 12) {
-                // Dynamic Island / Notch spacer
-                Spacer()
-                    .frame(height: topInset > 0 ? topInset : 20)
+                // Spacer for status bar
+                Spacer().frame(height: 60)
                 
                 // Icon
                 ZStack {
@@ -350,6 +348,20 @@ struct RegisterUI: View {
                 .disabled(viewModel.isLoadingLocation)
             }
             
+            HStack(spacing: 12) {
+                CustomTextField(
+                    icon: "map.fill",
+                    placeholder: "İlçe",
+                    text: $viewModel.businessDistrict
+                )
+                
+                CustomTextField(
+                    icon: "mappin.and.ellipse",
+                    placeholder: "Şehir",
+                    text: $viewModel.businessCity
+                )
+            }
+            
             CustomTextField(
                 icon: "tag.fill",
                 placeholder: "Kategori (Kuaför, Klinik, vb.)",
@@ -496,6 +508,8 @@ struct CustomSecureField: View {
             
             SecureField(placeholder, text: $text)
                 .font(.system(size: 16))
+                .textContentType(.password)
+                .submitLabel(.done)
         }
         .padding()
         .background(Color.bgSecondary)

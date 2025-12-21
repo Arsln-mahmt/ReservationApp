@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 extension Color {
     // MARK: - Primary Colors (Orange Theme)
@@ -19,9 +20,10 @@ extension Color {
     static let accentYellow = Color(hex: "#FFA726")         // Accent yellow-orange
     
     // MARK: - Background Colors
-    static let bgPrimary = Color(hex: "#FFFFFF")            // White background
-    static let bgSecondary = Color(hex: "#F8F9FA")          // Light gray background
-    static let bgCard = Color(hex: "#FFFFFF")               // Card background
+    static let bgPrimary = Color(hex: "#FFF8F3")            // Warm cream - turuncu ile uyumlu
+    static let bgSecondary = Color(hex: "#FFF5ED")          // Lighter warm tone
+    static let bgCard = Color(hex: "#FFFFFF")               // Card background (white)
+    static let bgLight = Color(hex: "#FFF5ED")              // Lighter warm tone
     
     // MARK: - Text Colors
     static let textPrimary = Color(hex: "#1A2332")          // Dark text

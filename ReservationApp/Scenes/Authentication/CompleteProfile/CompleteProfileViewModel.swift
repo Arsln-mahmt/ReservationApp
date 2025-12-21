@@ -24,6 +24,7 @@ class CompleteProfileViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isLoadingLocation = false
     @Published var errorMessage: String?
+    @Published var shouldShowBusinessSetup = false
     
     init(userType: UserType, userId: String, email: String, name: String) {
         self.userType = userType
@@ -32,9 +33,9 @@ class CompleteProfileViewModel: ObservableObject {
         self.name = name
     }
     
-    func completeProfile(completion: @escaping (Bool) -> Void) {
+    func completeProfile(completion: @escaping (Bool, User?) -> Void) {
         guard validateInput() else {
-            completion(false)
+            completion(false, nil)
             return
         }
         
@@ -69,15 +70,16 @@ class CompleteProfileViewModel: ObservableObject {
                     
                     if let error = error {
                         self?.errorMessage = error.localizedDescription
-                        completion(false)
+                        completion(false, nil)
                     } else {
-                        completion(true)
+                        // Return the created user object
+                        completion(true, user)
                     }
                 }
         } catch {
             self.isLoading = false
             self.errorMessage = error.localizedDescription
-            completion(false)
+            completion(false, nil)
         }
     }
     

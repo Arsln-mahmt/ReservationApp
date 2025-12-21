@@ -12,6 +12,7 @@ struct LoginScene: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @EnvironmentObject var appEnvironment: AppEnvironment
+    @Environment(\.dismiss) var dismiss
     
     var body: some View {
         NavigationStack {
@@ -25,18 +26,29 @@ struct LoginScene: View {
                 )
             }
         }
-        .onChange(of: viewModel.loginSuccess) { success in
-            if success, let user = viewModel.loggedInUser {
+        .onChange(of: viewModel.loginSuccessId) { _, newValue in
+            if newValue != nil, let user = viewModel.loggedInUser {
+                print("🔄 Login success detected, navigating...")
+                
                 // Update app environment
                 appEnvironment.currentUser = user
                 appEnvironment.isAuthenticated = true
                 appEnvironment.userType = user.userType
                 
-                // Navigate to appropriate home screen
+                // Update auth manager
+                authManager.currentUser = user
+                authManager.isAuthenticated = true
+                
+                // Close the login sheet
+                dismiss()
+                
+                // Navigate to appropriate screen
                 switch user.userType {
                 case .customer:
-                    sceneDelegate.navigateTo(.customerHome)
+                    print("👤 Navigating to customer main app")
+                    sceneDelegate.navigateTo(.mainApp)
                 case .business:
+                    print("🏢 Navigating to business dashboard")
                     sceneDelegate.navigateTo(.businessDashboard)
                 }
             }

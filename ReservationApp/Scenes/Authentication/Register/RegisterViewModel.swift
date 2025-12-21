@@ -10,9 +10,10 @@ import SwiftUI
 import Combine
 import FirebaseAuth
 import FirebaseFirestore
+import CoreLocation
 
 class RegisterViewModel: ObservableObject {
-    @Published var registrationSuccess = false
+    @Published var registrationSuccessId: UUID?
     @Published var registeredUserId: String?
     // User info
     @Published var firstName = ""
@@ -26,6 +27,8 @@ class RegisterViewModel: ObservableObject {
     // Business info (only if userType = business)
     @Published var businessName = ""
     @Published var businessAddress = ""
+    @Published var businessCity = ""
+    @Published var businessDistrict = ""
     @Published var businessCategory = ""
     
     // State
@@ -45,9 +48,19 @@ class RegisterViewModel: ObservableObject {
         
         let fullName = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
         
-        let businessNameValue = userType == .business ? businessName : nil
-        let businessAddressValue = userType == .business ? businessAddress : nil
-        let businessCategoryValue = userType == .business ? businessCategory : nil
+        let businessNameValue = userType == .business ? businessName.trimmingCharacters(in: .whitespacesAndNewlines) : nil
+        // Combine address components: "Address, District / City"
+        let city = businessCity.trimmingCharacters(in: .whitespacesAndNewlines)
+        let district = businessDistrict.trimmingCharacters(in: .whitespacesAndNewlines)
+        let address = businessAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        let combinedAddress = userType == .business ? "\(address), \(district) / \(city)" : nil
+        let businessCityValue = userType == .business ? city : nil
+        let businessDistrictValue = userType == .business ? district : nil
+        let businessCategoryValue = userType == .business ? businessCategory.trimmingCharacters(in: .whitespacesAndNewlines) : nil
+        
+        print("📝 Registering business: City='\(city)', District='\(district)'")
+        print("📝 Combined Address: \(combinedAddress ?? "nil")")
         
         authManager.signUp(
             email: email,
@@ -56,7 +69,9 @@ class RegisterViewModel: ObservableObject {
             phoneNumber: phoneNumber,
             userType: userType,
             businessName: businessNameValue,
-            businessAddress: businessAddressValue,
+            businessAddress: combinedAddress,
+            businessCity: businessCityValue,
+            businessDistrict: businessDistrictValue,
             businessCategory: businessCategoryValue
         ) { [weak self] result in
             DispatchQueue.main.async {
@@ -67,7 +82,7 @@ class RegisterViewModel: ObservableObject {
                     // Registration successful, navigate to phone verification
                     print("✅ Registration successful!")
                     self?.registeredUserId = user.uid
-                    self?.registrationSuccess = true
+                    self?.registrationSuccessId = UUID()
                 case .failure(let error):
                     self?.errorMessage = error.localizedDescription
                     print("❌ Registration error: \(error.localizedDescription)")
@@ -93,14 +108,34 @@ class RegisterViewModel: ObservableObject {
         isLoadingLocation = true
         errorMessage = nil
         
-        LocationManager.shared.getCurrentLocation { [weak self] result in
+        LocationManager.shared.getCurrentLocationPlacemark { [weak self] result in
             DispatchQueue.main.async {
                 self?.isLoadingLocation = false
                 
                 switch result {
-                case .success(let address):
-                    self?.businessAddress = address
-                    print("✅ Location fetched: \(address)")
+                case .success(let placemark):
+                    // Extract address components
+                    var addressParts: [String] = []
+                    
+                    // Street and Number
+                    if let thoroughfare = placemark.thoroughfare {
+                        var street = thoroughfare
+                        if let subThoroughfare = placemark.subThoroughfare {
+                            street += " No:\(subThoroughfare)"
+                        }
+                        addressParts.append(street)
+                    }
+                    
+                    // Neighborhood
+                    if let subLocality = placemark.subLocality {
+                        addressParts.append(subLocality)
+                    }
+                    
+                    self?.businessAddress = addressParts.joined(separator: ", ")
+                    self?.businessDistrict = placemark.locality ?? ""
+                    self?.businessCity = placemark.administrativeArea ?? ""
+                    
+                    print("✅ Location fetched: \(self?.businessAddress ?? ""), \(self?.businessDistrict ?? "") / \(self?.businessCity ?? "")")
                     
                 case .failure(let error):
                     if let locationError = error as? LocationError {
@@ -170,6 +205,16 @@ class RegisterViewModel: ObservableObject {
             
             guard !businessAddress.isEmpty else {
                 errorMessage = "Lütfen işletme adresini girin"
+                return false
+            }
+            
+            guard !businessCity.isEmpty else {
+                errorMessage = "Lütfen şehir bilgisini girin"
+                return false
+            }
+            
+            guard !businessDistrict.isEmpty else {
+                errorMessage = "Lütfen ilçe bilgisini girin"
                 return false
             }
         }

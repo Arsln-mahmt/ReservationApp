@@ -28,9 +28,26 @@ struct Business: Codable, Identifiable {
 
 /// Service model
 struct Service: Codable, Identifiable {
-    var id: String = UUID().uuidString
-    var name: String          // Service name (Haircut, Coloring, etc.)
-    var description: String   // Description
-    var duration: Int         // Duration (minutes)
-    var price: Double         // Price
+    @DocumentID var id: String?
+    var businessId: String          // Business ID
+    var name: String                // Service name (Haircut, Coloring, etc.)
+    var description: String?        // Description
+    var duration: Int               // Duration (minutes)
+    var price: Double               // Price
+    var isActive: Bool              // Is service active?
+    var createdAt: Timestamp        // Creation date
+    
+    // For preview/testing
+    static var sample: Service {
+        Service(
+            id: "1",
+            businessId: "bus_1",
+            name: "Saç Kesimi",
+            description: "Profesyonel saç kesimi hizmeti",
+            duration: 30,
+            price: 150.0,
+            isActive: true,
+            createdAt: Timestamp()
+        )
+    }
 }

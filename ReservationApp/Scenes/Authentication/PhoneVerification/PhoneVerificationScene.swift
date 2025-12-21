@@ -15,7 +15,10 @@ struct PhoneVerificationScene: View {
     }
     
     var body: some View {
-        PhoneVerificationUI(viewModel: viewModel)
+        NavigationStack {
+            PhoneVerificationUI(viewModel: viewModel)
+                .navigationBarHidden(true)
+        }
     }
 }
 

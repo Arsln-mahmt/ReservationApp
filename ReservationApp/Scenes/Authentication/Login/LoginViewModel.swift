@@ -13,15 +13,23 @@ class LoginViewModel: ObservableObject {
     @Published var password = ""
     @Published var isLoading = false
     @Published var errorMessage: String?
-    @Published var loginSuccess = false
+    @Published var loginSuccessId: UUID?
     @Published var needsPhoneVerification = false
     @Published var loggedInUser: User?
     
     private let authManager = AuthManager.shared
     
     func login() {
-        guard validateInput() else { return }
+        print("🔵 Login button pressed")
+        print("🔵 Email: \(email)")
+        print("🔵 Password length: \(password.count)")
         
+        guard validateInput() else {
+            print("❌ Validation failed: \(errorMessage ?? "Unknown error")")
+            return
+        }
+        
+        print("✅ Validation passed, calling authManager.signIn...")
         isLoading = true
         errorMessage = nil
         
@@ -32,20 +40,26 @@ class LoginViewModel: ObservableObject {
                 switch result {
                 case .success(let user):
                     print("✅ Login successful! User: \(user.name)")
+                    print("✅ User ID: \(user.uid)")
+                    print("✅ User type: \(user.userType)")
+                    print("✅ Phone verified: \(user.phoneVerified)")
                     self?.loggedInUser = user
                     
                     // Check if phone is verified
                     if user.phoneVerified == true {
-                        // Phone verified, navigate to home
-                        self?.loginSuccess = true
+                        // Phone verified, navigate to home - use UUID to trigger navigation every time
+                        print("✅ Phone verified, setting loginSuccessId")
+                        self?.loginSuccessId = UUID()
                     } else {
                         // Phone not verified, navigate to verification
+                        print("⚠️ Phone not verified, showing verification screen")
                         self?.needsPhoneVerification = true
                     }
                     
                 case .failure(let error):
                     self?.errorMessage = error.localizedDescription
                     print("❌ Login error: \(error.localizedDescription)")
+                    print("❌ Full error: \(error)")
                 }
             }
         }

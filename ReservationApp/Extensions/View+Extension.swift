@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 extension View {
     /// Modern card style with shadow

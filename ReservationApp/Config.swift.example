@@ -1,0 +1,24 @@
+//
+//  Config.swift.example
+//  ReservationApp
+//
+//  Created by Mahmut Arslan on 15.12.2025.
+//
+//  INSTRUCTIONS:
+//  1. Bu dosyayı "Config.swift" olarak kopyalayın
+//  2. "YOUR_API_KEY_HERE" yerine gerçek API key'inizi yazın
+//  3. Config.swift dosyası .gitignore'da olduğu için Git'e gitmeyecek
+//
+
+import Foundation
+
+/// App configuration and API keys
+struct Config {
+    // MARK: - Google Maps API
+    /// Google Maps API Key - DO NOT COMMIT TO GIT
+    /// Get your API key from: https://console.cloud.google.com
+    static let googleMapsAPIKey = "YOUR_API_KEY_HERE"
+    
+    // MARK: - Backend
+    static let backendBaseURL = "http://192.168.1.129:8000"
+}

@@ -1,0 +1,531 @@
+//
+//  ReservationManager.swift
+//  ReservationApp
+//
+//  Created by Mahmut Arslan on 25.10.2025.
+//
+
+import Foundation
+import FirebaseFirestore
+import Combine
+
+class ReservationManager: ObservableObject {
+    private lazy var db = Firestore.firestore()
+    
+    static let shared = ReservationManager()
+    
+    private init() {}
+    
+    // MARK: - Create Reservation
+    func createReservation(
+        customerId: String,
+        customerName: String,
+        customerPhone: String?,
+        businessId: String,
+        businessName: String,
+        serviceType: String,
+        date: Date,
+        timeSlot: String,
+        duration: Int,
+        notes: String? = nil,
+        completion: @escaping (Result<String, Error>) -> Void
+    ) {
+        print("\n" + String(repeating: "💾", count: 25))
+        print("📝 FIREBASE CREATE RESERVATION - START")
+        print(String(repeating: "💾", count: 25))
+        print("Collection: \(Constant.reservationsCollection)")
+        print("Customer ID: \(customerId)")
+        print("Customer Name: \(customerName)")
+        print("Business ID: \(businessId)")
+        print("Business Name: \(businessName)")
+        print("Service: \(serviceType)")
+        print("Date: \(date)")
+        print("Time Slot: \(timeSlot)")
+        print("Duration: \(duration) min")
+        print(String(repeating: "💾", count: 25) + "\n")
+        
+        let reservation = Reservation(
+            id: nil,
+            customerId: customerId,
+            customerName: customerName,
+            customerPhone: customerPhone,
+            businessId: businessId,
+            businessName: businessName,
+            serviceType: serviceType,
+            date: Timestamp(date: date),
+            timeSlot: timeSlot,
+            duration: duration,
+            status: .pending,
+            notes: notes,
+            createdAt: Timestamp(),
+            updatedAt: nil,
+            aiRecommended: false
+        )
+        
+        print("🔐 Attempting to write to Firestore...")
+        
+        do {
+            let docRef = try db.collection(Constant.reservationsCollection)
+                .addDocument(from: reservation)
+            
+            print("\n" + String(repeating: "✅", count: 25))
+            print("💚 FIREBASE WRITE SUCCESS!")
+            print("   Document ID: \(docRef.documentID)")
+            print("   Collection: \(Constant.reservationsCollection)")
+            print("   Customer ID: \(customerId)")
+            print(String(repeating: "✅", count: 25) + "\n")
+            
+            completion(.success(docRef.documentID))
+        } catch {
+            print("\n" + String(repeating: "❌", count: 25))
+            print("🔥 FIREBASE WRITE FAILED!")
+            print("   Error: \(error.localizedDescription)")
+            print("   Full error: \(error)")
+            print("   Collection: \(Constant.reservationsCollection)")
+            print(String(repeating: "❌", count: 25) + "\n")
+            
+            completion(.failure(error))
+        }
+    }
+    
+    // MARK: - Get Customer Reservations
+    func getCustomerReservations(
+        customerId: String,
+        completion: @escaping (Result<[Reservation], Error>) -> Void
+    ) {
+        print("\n" + String(repeating: "🔍", count: 25))
+        print("📖 FIREBASE READ RESERVATIONS - START")
+        print(String(repeating: "🔍", count: 25))
+        print("Collection: \(Constant.reservationsCollection)")
+        print("Query: user_id == \(customerId)")
+        print("Sorting: Client-side (date descending)")
+        print(String(repeating: "🔍", count: 25) + "\n")
+        
+        // Try to get from cache first, then server
+        db.collection(Constant.reservationsCollection)
+            .whereField("user_id", isEqualTo: customerId)
+            .getDocuments(source: .default) { [weak self] snapshot, error in
+                
+                if let error = error {
+                    print("⚠️ Default source failed, trying cache only...")
+                    // If default fails, try cache
+                    self?.db.collection(Constant.reservationsCollection)
+                        .whereField("user_id", isEqualTo: customerId)
+                        .getDocuments(source: .cache) { cacheSnapshot, cacheError in
+                            if let cacheError = cacheError {
+                                print("❌ Cache also failed: \(cacheError)")
+                                completion(.failure(error))
+                            } else if let docs = cacheSnapshot?.documents, !docs.isEmpty {
+                                print("✅ Got \(docs.count) documents from cache")
+                                self?.parseReservations(documents: docs, customerId: customerId, completion: completion)
+                            } else {
+                                print("⚠️ Cache is empty, returning error")
+                                completion(.failure(error))
+                            }
+                        }
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    print("\n⚠️ No snapshot documents (nil)")
+                    print("   This means the query returned but has no results\n")
+                    completion(.success([]))
+                    return
+                }
+                
+                self?.parseReservations(documents: documents, customerId: customerId, completion: completion)
+            }
+    }
+    
+    private func parseReservations(documents: [QueryDocumentSnapshot], customerId: String, completion: @escaping (Result<[Reservation], Error>) -> Void) {
+        print("\n" + String(repeating: "📄", count: 25))
+        print("📦 FIREBASE READ RESULT")
+        print("   Found \(documents.count) documents")
+        
+        if documents.isEmpty {
+            print("   ⚠️ Documents array is EMPTY!")
+            print("   This means NO reservations found for customer: \(customerId)")
+            print(String(repeating: "📄", count: 25) + "\n")
+            completion(.success([]))
+            return
+        }
+        
+        print("   Document IDs:")
+        documents.forEach { doc in
+            print("      - \(doc.documentID)")
+            print("        Data: \(doc.data())")
+        }
+        print(String(repeating: "📄", count: 25) + "\n")
+        
+        // Parse each document individually to find which one fails
+        var reservations: [Reservation] = []
+        var failedDocuments: [(String, String)] = []
+        
+        for doc in documents {
+            do {
+                var reservation = try doc.data(as: Reservation.self)
+                // Manually set the document ID since custom decoder doesn't handle @DocumentID
+                reservation.id = doc.documentID
+                reservations.append(reservation)
+                print("✅ Successfully decoded: \(doc.documentID)")
+            } catch {
+                print("❌ Failed to decode \(doc.documentID): \(error)")
+                print("   Document data: \(doc.data())")
+                failedDocuments.append((doc.documentID, error.localizedDescription))
+            }
+        }
+        
+        if !failedDocuments.isEmpty {
+            print("\n⚠️ \(failedDocuments.count) documents failed to decode:")
+            failedDocuments.forEach { id, error in
+                print("   - \(id): \(error)")
+            }
+        }
+        
+        // If we got some reservations, return them (ignore failed ones)
+        if !reservations.isEmpty {
+            // Get current date for comparison
+            let now = Date()
+            
+            // Sort by appointment date+time (nearest first), with active reservations before past ones
+            let sortedReservations = reservations.sorted { res1, res2 in
+                // Parse full datetime for each reservation
+                func getFullDateTime(_ res: Reservation) -> Date {
+                    let baseDate = res.date.dateValue()
+                    let timeComponents = res.timeSlot.split(separator: ":").compactMap { Int($0) }
+                    guard timeComponents.count >= 2 else { return baseDate }
+                    
+                    var calendar = Calendar.current
+                    calendar.timeZone = TimeZone.current
+                    var components = calendar.dateComponents([.year, .month, .day], from: baseDate)
+                    components.hour = timeComponents[0]
+                    components.minute = timeComponents[1]
+                    
+                    return calendar.date(from: components) ?? baseDate
+                }
+                
+                let dateTime1 = getFullDateTime(res1)
+                let dateTime2 = getFullDateTime(res2)
+                
+                // Check if reservations are in the future or past
+                let isFuture1 = dateTime1 > now
+                let isFuture2 = dateTime2 > now
+                
+                // Future reservations come before past reservations
+                if isFuture1 != isFuture2 {
+                    return isFuture1
+                }
+                
+                // Both future: nearest first (ascending)
+                // Both past: most recent first (descending)
+                if isFuture1 {
+                    return dateTime1 < dateTime2  // Nearest future first
+                } else {
+                    return dateTime1 > dateTime2  // Most recent past first
+                }
+            }
+            
+            print("\n" + String(repeating: "✅", count: 25))
+            print("💚 SUCCESSFULLY DECODED \(sortedReservations.count) RESERVATIONS!")
+            print("📋 Sort logic: Nearest appointment first (future before past)")
+            print("")
+            sortedReservations.prefix(5).enumerated().forEach { index, reservation in
+                var statusIcon: String
+                switch reservation.status {
+                case .pending: statusIcon = "⏳"
+                case .confirmed: statusIcon = "✅"
+                case .completed: statusIcon = "✔️"
+                case .noShow: statusIcon = "👻"
+                case .cancelled: statusIcon = "❌"
+                }
+                print("   \(index + 1). \(statusIcon) \(reservation.displayBusinessName): \(reservation.serviceType)")
+                print("      Created: \(reservation.createdAt.dateValue()) | Appt: \(reservation.date.dateValue()) \(reservation.timeSlot)")
+            }
+            if sortedReservations.count > 5 {
+                print("   ... and \(sortedReservations.count - 5) more")
+            }
+            print(String(repeating: "✅", count: 25) + "\n")
+            
+            completion(.success(sortedReservations))
+        } else {
+            // All documents failed
+            let error = NSError(domain: "ReservationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to decode any reservations"])
+            completion(.failure(error))
+        }
+    }
+    
+    // MARK: - Get Business Reservations
+    func getBusinessReservations(
+        businessId: String,
+        completion: @escaping (Result<[Reservation], Error>) -> Void
+    ) {
+        db.collection(Constant.reservationsCollection)
+            .whereField("business_id", isEqualTo: businessId)
+            .getDocuments { snapshot, error in
+                
+                print("\n" + String(repeating: "🏢", count: 25))
+                print("FETCHING BUSINESS RESERVATIONS")
+                print("Business ID: \(businessId)")
+                
+                if let error = error {
+                    print("❌ Failed to fetch business reservations: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    print("⚠️ No documents found for business")
+                    completion(.success([]))
+                    return
+                }
+                
+                print("📄 Found \(documents.count) documents")
+                
+                // Parse each document individually
+                var reservations: [Reservation] = []
+                
+                for doc in documents {
+                    do {
+                        var reservation = try doc.data(as: Reservation.self)
+                        // Manually set the document ID since custom decoder doesn't handle @DocumentID
+                        reservation.id = doc.documentID
+                        reservations.append(reservation)
+                        print("   ✅ Doc ID: \(doc.documentID) - parsed successfully")
+                    } catch {
+                        print("   ❌ Doc ID: \(doc.documentID) - failed: \(error.localizedDescription)")
+                    }
+                }
+                
+                // Sort by date (ascending) on client side
+                let sortedReservations = reservations.sorted { $0.date.dateValue() < $1.date.dateValue() }
+                print("✅ Fetched \(sortedReservations.count) reservations for business")
+                print(String(repeating: "🏢", count: 25) + "\n")
+                completion(.success(sortedReservations))
+            }
+    }
+    
+    // MARK: - Update Reservation Status
+    func updateReservationStatus(
+        reservationId: String,
+        status: ReservationStatus,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        db.collection(Constant.reservationsCollection)
+            .document(reservationId)
+            .updateData([
+                "status": status.rawValue,
+                "updatedAt": Timestamp()
+            ]) { error in
+                if let error = error {
+                    print("❌ Failed to update reservation status: \(error)")
+                    completion(.failure(error))
+                } else {
+                    print("✅ Reservation status updated to: \(status.displayName)")
+                    completion(.success(()))
+                }
+            }
+    }
+    
+    // MARK: - Cancel Reservation
+    func cancelReservation(
+        reservationId: String,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        updateReservationStatus(reservationId: reservationId, status: .cancelled, completion: completion)
+    }
+    
+    // MARK: - Confirm Reservation (Business)
+    func confirmReservation(
+        reservationId: String,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        updateReservationStatus(reservationId: reservationId, status: .confirmed, completion: completion)
+    }
+    
+    // MARK: - Reject Reservation (Business)
+    func rejectReservation(
+        reservationId: String,
+        rejectionReason: String? = nil,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        var updateData: [String: Any] = [
+            "status": ReservationStatus.cancelled.rawValue,
+            "updatedAt": Timestamp()
+        ]
+        
+        if let reason = rejectionReason {
+            updateData["notes"] = reason
+        }
+        
+        db.collection(Constant.reservationsCollection)
+            .document(reservationId)
+            .updateData(updateData) { error in
+                if let error = error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            }
+    }
+    
+    // MARK: - Propose New Time (Business)
+    func proposeNewTime(
+        reservationId: String,
+        proposedDate: Date,
+        proposedTimeSlot: String,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        // Use snake_case field names to match CodingKeys
+        let updateData: [String: Any] = [
+            "proposed_date": Timestamp(date: proposedDate),
+            "proposed_time_slot": proposedTimeSlot,
+            "status": ReservationStatus.pending.rawValue,
+            "updated_at": Timestamp()
+        ]
+        
+        print("🕐 Saving proposed time to Firebase:")
+        print("   proposed_date: \(proposedDate)")
+        print("   proposed_time_slot: \(proposedTimeSlot)")
+        
+        db.collection(Constant.reservationsCollection)
+            .document(reservationId)
+            .updateData(updateData) { error in
+                if let error = error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            }
+    }
+    
+    // MARK: - Accept Proposed Time (Customer)
+    func acceptProposedTime(
+        reservationId: String,
+        newDate: Date,
+        newTimeSlot: String,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        // Use snake_case field names to match CodingKeys
+        let updateData: [String: Any] = [
+            "date": Timestamp(date: newDate),
+            "time": newTimeSlot,
+            "proposed_date": FieldValue.delete(),
+            "proposed_time_slot": FieldValue.delete(),
+            "status": ReservationStatus.confirmed.rawValue,
+            "updated_at": Timestamp()
+        ]
+        
+        print("✅ Accepting proposed time:")
+        print("   New date: \(newDate)")
+        print("   New time: \(newTimeSlot)")
+        
+        db.collection(Constant.reservationsCollection)
+            .document(reservationId)
+            .updateData(updateData) { error in
+                if let error = error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            }
+    }
+    
+    // MARK: - Reject Proposed Time (Customer)
+    func rejectProposedTime(
+        reservationId: String,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        // Use snake_case field names to match CodingKeys
+        let updateData: [String: Any] = [
+            "proposed_date": FieldValue.delete(),
+            "proposed_time_slot": FieldValue.delete(),
+            "status": ReservationStatus.cancelled.rawValue,
+            "updated_at": Timestamp()
+        ]
+        
+        print("❌ Rejecting proposed time - cancelling reservation")
+        
+        db.collection(Constant.reservationsCollection)
+            .document(reservationId)
+            .updateData(updateData) { error in
+                if let error = error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            }
+    }
+    
+    // MARK: - Get Available Time Slots
+    func getAvailableTimeSlots(
+        businessId: String,
+        date: Date,
+        duration: Int,
+        completion: @escaping (Result<[String], Error>) -> Void
+    ) {
+        print("🕒 Getting available time slots for businessId: \(businessId)")
+        print("📅 Date: \(date)")
+        
+        // Generate all possible slots FIRST (even before Firebase query)
+        let allSlots = Util.generateTimeSlots(
+            startHour: 9,
+            endHour: 18,
+            interval: 30  // Fixed 30-minute intervals
+        )
+        
+        print("🔢 Generated \(allSlots.count) total time slots")
+        print("📝 All slots: \(allSlots)")
+        
+        // If no slots generated, return error
+        if allSlots.isEmpty {
+            print("❌ No slots generated!")
+            completion(.failure(NSError(domain: "ReservationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not generate time slots"])))
+            return
+        }
+        
+        // Get reservations for this date
+        let startOfDay = Calendar.current.startOfDay(for: date)
+        let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
+        
+        db.collection(Constant.reservationsCollection)
+            .whereField("business_id", isEqualTo: businessId)
+            .whereField("date", isGreaterThanOrEqualTo: Timestamp(date: startOfDay))
+            .whereField("date", isLessThan: Timestamp(date: endOfDay))
+            .getDocuments { snapshot, error in
+                
+                if let error = error {
+                    print("⚠️ Error fetching reservations (but continuing with all slots): \(error)")
+                    // Even if there's an error, return all slots as available
+                    completion(.success(allSlots))
+                    return
+                }
+                
+                // Get booked slots (excluding cancelled reservations)
+                let bookedSlots = snapshot?.documents.compactMap { doc -> String? in
+                    guard let reservation = try? doc.data(as: Reservation.self) else { return nil }
+                    // Only count non-cancelled reservations
+                    if reservation.status == .cancelled {
+                        print("   ⏭️ Skipping cancelled reservation at \(reservation.timeSlot)")
+                        return nil
+                    }
+                    return reservation.timeSlot
+                } ?? []
+                
+                print("📋 Found \(bookedSlots.count) booked slots (excluding cancelled): \(bookedSlots)")
+                
+                // Filter out booked slots
+                let availableSlots = allSlots.filter { !bookedSlots.contains($0) }
+                
+                print("✅ Available slots: \(availableSlots.count)")
+                print("📝 Available: \(availableSlots)")
+                
+                // If no available slots, still return all slots (better than nothing)
+                if availableSlots.isEmpty && allSlots.count > 0 {
+                    print("⚠️ All slots booked, but returning them anyway for testing")
+                    completion(.success(allSlots))
+                } else {
+                    completion(.success(availableSlots))
+                }
+            }
+    }
+}

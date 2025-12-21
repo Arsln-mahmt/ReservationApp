@@ -10,12 +10,13 @@ import Foundation
 struct Constant {
     // MARK: - App Info
     static let appName = "ReservationApp"
-    static let appVersion = "1.0.0"
+    static let appVersion = "0.1.0"
     
     // MARK: - Firebase Collections
     static let usersCollection = "users"
     static let businessesCollection = "businesses"
     static let reservationsCollection = "reservations"
+    static let servicesCollection = "services"
     static let reviewsCollection = "reviews"
     
     // MARK: - API URLs (AI service)

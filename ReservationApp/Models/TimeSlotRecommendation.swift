@@ -4,7 +4,7 @@
 //
 //  Created by Mahmut Arslan on 25.10.2025.
 //
-
+/*
 import Foundation
 
 /// AI time slot recommendation
@@ -59,3 +59,4 @@ struct ReservationAnalytics: Codable {
     var popularServices: [String]       // Popular services
     var customerRetentionRate: Double   // Customer retention rate
 }
+*/

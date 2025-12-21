@@ -9,7 +9,7 @@ import SwiftUI
 import Combine
 
 class SceneDelegate: ObservableObject {
-    @Published var currentScene: AppSceneType = .splash
+    @Published var currentScene: AppSceneType = .mainApp
     
     static let shared = SceneDelegate()
     

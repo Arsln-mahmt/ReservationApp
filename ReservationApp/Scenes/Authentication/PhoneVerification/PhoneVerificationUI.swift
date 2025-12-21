@@ -13,6 +13,7 @@ struct PhoneVerificationUI: View {
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @EnvironmentObject var appEnvironment: AppEnvironment
     @FocusState private var isCodeFieldFocused: Bool
+    @Environment(\.dismiss) var dismiss
     
     var body: some View {
         GeometryReader { geometry in
@@ -22,7 +23,7 @@ struct PhoneVerificationUI: View {
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Header
+                    // Header with back button
                     headerSection(geometry: geometry)
                     
                     // Content
@@ -78,6 +79,28 @@ struct PhoneVerificationUI: View {
             Rectangle()
                 .fill(Color.clear)
                 .frame(height: dynamicHeight)
+            
+            // Back button
+            VStack {
+                HStack {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text("Geri")
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                    }
+                    Spacer()
+                }
+                .padding(.top, topInset > 50 ? 8 : 4)
+                Spacer()
+            }
             
             VStack(spacing: 12) {
                 Image(systemName: "checkmark.shield.fill")
@@ -161,7 +184,11 @@ struct PhoneVerificationUI: View {
                 if success {
                     // Wait a moment to show success message
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        navigateToHome()
+                        dismiss() // Close verification screen
+                        // Then navigate to home
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            navigateToHome()
+                        }
                     }
                 }
             }
@@ -224,7 +251,7 @@ struct PhoneVerificationUI: View {
         if let userType = appEnvironment.currentUser?.userType {
             switch userType {
             case .customer:
-                sceneDelegate.navigateTo(.customerHome)
+                sceneDelegate.navigateTo(.mainApp)
             case .business:
                 sceneDelegate.navigateTo(.businessDashboard)
             }

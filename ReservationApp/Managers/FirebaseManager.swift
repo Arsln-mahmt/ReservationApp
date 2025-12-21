@@ -12,15 +12,33 @@ import FirebaseStorage
 class FirebaseManager {
     static let shared = FirebaseManager()
     
-    let db = Firestore.firestore()
-    let storage = Storage.storage()
-    
-    private init() {
+    lazy var db: Firestore = {
+        print("🔥 Initializing Firestore...")
+        let firestore = Firestore.firestore()
         let settings = FirestoreSettings()
         settings.isPersistenceEnabled = true
-        db.settings = settings
+        firestore.settings = settings
+        print("✅ Firestore initialized with persistence")
         
-        print("✅ FirebaseManager initialized")
+        // Test connection
+        print("🧪 Testing Firestore connection...")
+        firestore.collection("_test_").limit(to: 1).getDocuments { snapshot, error in
+            if let error = error {
+                print("❌ Firestore connection test FAILED: \(error.localizedDescription)")
+                print("❌ Error code: \((error as NSError).code)")
+                print("❌ Error domain: \((error as NSError).domain)")
+            } else {
+                print("✅ Firestore connection test SUCCESSFUL")
+            }
+        }
+        
+        return firestore
+    }()
+    
+    lazy var storage = Storage.storage()
+    
+    private init() {
+        print("✅ FirebaseManager initialized (Firestore will be lazy loaded)")
     }
     
     // MARK: - Generic Firestore Operations

@@ -69,8 +69,41 @@ class LocationManager: NSObject, ObservableObject {
         self.locationCompletion = completion
     }
     
-    // Store completion handler
+    // MARK: - Get Current Location Placemark
+    func getCurrentLocationPlacemark(completion: @escaping (Result<CLPlacemark, Error>) -> Void) {
+        isLoading = true
+        errorMessage = nil
+        
+        // Check authorization status
+        let status = locationManager.authorizationStatus
+        
+        switch status {
+        case .notDetermined:
+            requestPermission()
+            completion(.failure(LocationError.permissionNotDetermined))
+            isLoading = false
+            return
+            
+        case .denied, .restricted:
+            isLoading = false
+            completion(.failure(LocationError.permissionDenied))
+            return
+            
+        case .authorizedWhenInUse, .authorizedAlways:
+            locationManager.requestLocation()
+            
+        @unknown default:
+            isLoading = false
+            completion(.failure(LocationError.unknownError))
+            return
+        }
+        
+        self.placemarkCompletion = completion
+    }
+    
+    // Store completion handlers
     private var locationCompletion: ((Result<String, Error>) -> Void)?
+    private var placemarkCompletion: ((Result<CLPlacemark, Error>) -> Void)?
     
     // MARK: - Geocode Location to Address
     private func geocodeLocation(_ location: CLLocation) {
@@ -98,6 +131,11 @@ class LocationManager: NSObject, ObservableObject {
             
             print("✅ Location found: \(address)")
             self.locationCompletion?(.success(address))
+            self.placemarkCompletion?(.success(placemark))
+            
+            // Clear completions
+            self.locationCompletion = nil
+            self.placemarkCompletion = nil
         }
     }
     
@@ -173,7 +211,11 @@ extension LocationManager: CLLocationManagerDelegate {
             }
         } else {
             locationCompletion?(.failure(error))
+            placemarkCompletion?(.failure(error))
         }
+        
+        locationCompletion = nil
+        placemarkCompletion = nil
     }
 }
 
@@ -200,4 +242,14 @@ enum LocationError: LocalizedError {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
 

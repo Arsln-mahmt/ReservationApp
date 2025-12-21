@@ -9,8 +9,6 @@ import Foundation
 
 /// App scene types (which screen to display)
 enum AppSceneType {
-    case splash               // Splash screen (first launch)
-    case authentication       // Login/Register screen
-    case customerHome         // Customer home screen
-    case businessDashboard    // Business dashboard
+    case mainApp              // Main app with TabBar (guest or logged in)
+    case businessDashboard    // Business dashboard (for business users only)
 }

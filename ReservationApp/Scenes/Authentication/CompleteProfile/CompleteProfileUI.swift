@@ -10,6 +10,9 @@ import SwiftUI
 struct CompleteProfileUI: View {
     @ObservedObject var viewModel: CompleteProfileViewModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
+    @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var appEnvironment: AppEnvironment
+    @State private var businessUser: User?
     
     var body: some View {
         GeometryReader { geometry in
@@ -28,6 +31,16 @@ struct CompleteProfileUI: View {
                     }
                 }
                 .ignoresSafeArea(edges: .top)
+            }
+        }
+        .fullScreenCover(isPresented: $viewModel.shouldShowBusinessSetup, onDismiss: {
+            // When wizard is dismissed, navigate to business dashboard
+            if viewModel.userType == .business {
+                sceneDelegate.navigateTo(.businessDashboard)
+            }
+        }) {
+            if let user = businessUser {
+                BusinessSetupWizardScene(user: user)
             }
         }
     }
@@ -140,14 +153,34 @@ struct CompleteProfileUI: View {
                 
                 // Complete button
                 Button(action: {
-                    viewModel.completeProfile { success in
+                    viewModel.completeProfile { success, user in
                         if success {
-                            // Navigate to phone verification
-                            // For now, go directly to home
-                            if viewModel.userType == .business {
-                                sceneDelegate.navigateTo(.businessDashboard)
+                            if viewModel.userType == .business, let user = user {
+                                // Update AuthManager with the new user
+                                authManager.currentUser = user
+                                authManager.isAuthenticated = true
+                                
+                                // Update AppEnvironment
+                                appEnvironment.currentUser = user
+                                appEnvironment.isAuthenticated = true
+                                appEnvironment.userType = .business
+                                
+                                // Save user to businessUser state
+                                businessUser = user
+                                
+                                // Show business setup wizard for business accounts
+                                viewModel.shouldShowBusinessSetup = true
                             } else {
-                                sceneDelegate.navigateTo(.customerHome)
+                                // Customer accounts go directly to main app
+                                if let user = user {
+                                    authManager.currentUser = user
+                                    authManager.isAuthenticated = true
+                                    
+                                    appEnvironment.currentUser = user
+                                    appEnvironment.isAuthenticated = true
+                                    appEnvironment.userType = .customer
+                                }
+                                sceneDelegate.navigateTo(.mainApp)
                             }
                         }
                     }

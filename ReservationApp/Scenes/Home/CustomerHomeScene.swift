@@ -55,7 +55,7 @@ struct CustomerHomeScene: View {
                     
                     Button(action: {
                         authManager.signOut()
-                        sceneDelegate.navigateTo(.authentication)
+                        sceneDelegate.navigateTo(.mainApp)
                     }) {
                         HStack {
                             Image(systemName: "arrow.right.square.fill")

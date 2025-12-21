@@ -17,19 +17,25 @@ class AuthManager: ObservableObject {
     
     static let shared = AuthManager()
     private let auth = Auth.auth()
-    private let db = Firestore.firestore()
+    private lazy var db = Firestore.firestore()
     
     private init() {
-        checkAuthStatus()
+        // Don't call checkAuthStatus() here - it blocks app launch
+        print("✅ AuthManager initialized (auth check will be called later)")
     }
     
     /// Check if user is already authenticated
     func checkAuthStatus() {
-        if let firebaseUser = auth.currentUser {
-            print("✅ User already logged in: \(firebaseUser.uid)")
-            fetchUserData(uid: firebaseUser.uid)
-        } else {
-            print("ℹ️ User not logged in")
+        // Use async dispatch to avoid blocking main thread
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            
+            if let firebaseUser = self.auth.currentUser {
+                print("✅ User already logged in: \(firebaseUser.uid)")
+                self.fetchUserData(uid: firebaseUser.uid)
+            } else {
+                print("ℹ️ User not logged in")
+            }
         }
     }
     
@@ -62,6 +68,8 @@ class AuthManager: ObservableObject {
                userType: UserType,
                businessName: String? = nil,
                businessAddress: String? = nil,
+               businessCity: String? = nil,
+               businessDistrict: String? = nil,
                businessCategory: String? = nil,
                completion: @escaping (Result<User, Error>) -> Void) {
         
@@ -74,6 +82,7 @@ class AuthManager: ObservableObject {
             
             guard let uid = result?.user.uid else { return }
             print("✅ Firebase Auth registration successful, saving user data...")
+            print("📝 Saving User Data - City: '\(businessCity ?? "nil")', District: '\(businessDistrict ?? "nil")'")
             
             // Create User object
             let user = User(
@@ -88,6 +97,8 @@ class AuthManager: ObservableObject {
                 createdAt: Timestamp(),
                 updatedAt: nil,
                 businessName: businessName,
+                businessCity: businessCity,
+                businessDistrict: businessDistrict,
                 businessAddress: businessAddress,
                 businessCategory: businessCategory,
                 businessDescription: nil,
@@ -157,6 +168,12 @@ class AuthManager: ObservableObject {
                     }
                     
                     print("✅ User data saved successfully")
+                    
+                    // If business user, create business listing
+                    if user.userType == .business {
+                        self?.createBusinessListing(for: user)
+                    }
+                    
                     self?.fetchUserData(uid: uid) { user in
                         completion(.success(user))
                     }
@@ -164,6 +181,38 @@ class AuthManager: ObservableObject {
         } catch {
             print("❌ Failed to encode user data: \(error.localizedDescription)")
             completion(.failure(error))
+        }
+    }
+    
+    // MARK: - Create Business Listing
+    // MARK: - Create Business Listing
+    private func createBusinessListing(for user: User) {
+        guard let businessName = user.businessName,
+              let businessAddress = user.businessAddress,
+              let businessCategory = user.businessCategory else {
+            print("⚠️ Missing business info, skipping listing creation")
+            return
+        }
+        
+        // Use businessCity if available, otherwise try to extract from address or default to "İstanbul"
+        let city = user.businessCity ?? "İstanbul"
+        print("📝 Creating Business Listing - Using City: '\(city)' (User.businessCity: '\(user.businessCity ?? "nil")')")
+        
+        BusinessListingManager.shared.createOrUpdateBusinessListing(
+            businessId: user.uid,
+            name: businessName,
+            category: businessCategory,
+            city: city,
+            address: businessAddress,
+            description: user.businessDescription,
+            phoneNumber: user.phoneNumber
+        ) { result in
+            switch result {
+            case .success:
+                print("✅ Auto-created business listing for \(businessName)")
+            case .failure(let error):
+                print("❌ Failed to auto-create business listing: \(error)")
+            }
         }
     }
     
@@ -191,6 +240,13 @@ class AuthManager: ObservableObject {
                 self?.fetchUserData(uid: uid)
                 completion(.success(()))
             }
+    }
+    
+    // MARK: - Update Current User (for real-time updates)
+    func updateCurrentUser(_ user: User) {
+        DispatchQueue.main.async {
+            self.currentUser = user
+        }
     }
     
     // MARK: - Reset Password

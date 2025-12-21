@@ -1,0 +1,29 @@
+# Xcode
+*.xcuserstate
+*.xcworkspace
+xcuserdata/
+DerivedData/
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# CocoaPods
+Pods/
+*.podspec
+
+# Swift Package Manager
+.swiftpm/
+.build/
+Package.resolved
+
+# API Keys - DO NOT COMMIT!
+Config.swift
+
+# Firebase
+GoogleService-Info.plist
+
+# macOS
+.DS_Store

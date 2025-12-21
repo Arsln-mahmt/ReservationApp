@@ -27,7 +27,7 @@ class BusinessConverter {
             imageURL: getPhotoURL(from: place.photos?.first),
             description: nil,  // Google doesn't provide description
             priceRange: nil,   // Google doesn't provide price range
-            isOpen: place.business_status == "OPERATIONAL",
+            isOpen: place.opening_hours?.open_now ?? (place.business_status == "OPERATIONAL"),
             distance: nil,     // Will be calculated later
             googlePlaceId: place.place_id,
             isGoogleListing: true,

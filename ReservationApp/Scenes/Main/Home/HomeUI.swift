@@ -9,8 +9,11 @@ import SwiftUI
 
 struct HomeUI: View {
     @ObservedObject var viewModel: HomeViewModel
+    @EnvironmentObject var authManager: AuthManager
     @State private var showVoiceAssistant = false
     @State private var showBusinessSearch = false
+    @State private var showBusinessDashboard = false
+    @State private var isAnimating = false
     
     var body: some View {
         NavigationStack {
@@ -25,7 +28,9 @@ struct HomeUI: View {
                     categoryScrollView
                     
                     // Business list
-                    if viewModel.filteredBusinesses.isEmpty {
+                    if viewModel.isLoading {
+                        loadingView
+                    } else if viewModel.filteredBusinesses.isEmpty {
                         emptyView
                     } else {
                         businessList
@@ -37,6 +42,32 @@ struct HomeUI: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                // Business Dashboard Button (Left)
+                ToolbarItem(placement: .navigationBarLeading) {
+                    if authManager.isAuthenticated && viewModel.hasBusiness {
+                        Button {
+                            showBusinessDashboard = true
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "storefront.fill")
+                                    .font(.system(size: 16, weight: .semibold))
+                                Text("İşletmem")
+                                    .font(.system(size: 15, weight: .semibold))
+                            }
+                            .foregroundColor(.primaryOrange)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 28)
+                            .background(Color.bgPrimary)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(Color.primaryOrange.opacity(0.3), lineWidth: 1.5)
+                            )
+                            .cornerRadius(20)
+                        }
+                    }
+                }
+                
+                // Search Button (Right)
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         showBusinessSearch = true
@@ -45,8 +76,15 @@ struct HomeUI: View {
                             .font(.title2)
                             .foregroundColor(.orange)
                     }
+
                 }
             }
+        }
+        .fullScreenCover(isPresented: $showBusinessDashboard) {
+            BusinessDashboardScene()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .dismissBusinessDashboard)) { _ in
+            showBusinessDashboard = false
         }
         .sheet(isPresented: $viewModel.showCityPicker) {
             CityPickerSheet(
@@ -60,6 +98,18 @@ struct HomeUI: View {
         .sheet(isPresented: $showVoiceAssistant) {
             VoiceAssistantChatView()
         }
+        .sheet(item: $viewModel.selectedBusiness) { business in
+            NavigationStack {
+                SimpleBusinessDetail(business: business)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button("Kapat") {
+                                viewModel.selectedBusiness = nil
+                            }
+                        }
+                    }
+            }
+        }
         .sheet(isPresented: $showBusinessSearch) {
             BusinessSearchView { selectedPlace in
                 let businessListing = BusinessConverter.convertGooglePlace(selectedPlace, city: viewModel.selectedCity)
@@ -68,6 +118,16 @@ struct HomeUI: View {
                     viewModel.applyFilters()
                 }
                 showBusinessSearch = false
+                
+                // Open detail sheet after search closes
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    viewModel.selectedBusiness = businessListing
+                }
+            }
+        }
+        .onAppear {
+            if authManager.currentUser != nil {
+                viewModel.checkBusinessStatus()
             }
         }
     }
@@ -171,6 +231,31 @@ struct HomeUI: View {
             Text("Farklı bir şehir veya kategori seçin")
                 .font(.subheadline)
                 .foregroundColor(.gray.opacity(0.7))
+            Spacer()
+        }
+    }
+    
+    // MARK: - Loading View
+    private var loadingView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            
+            Image(systemName: "calendar")
+                .font(.system(size: 60))
+                .foregroundColor(.orange.opacity(0.6))
+                .scaleEffect(isAnimating ? 1.1 : 0.9)
+                .opacity(isAnimating ? 1.0 : 0.5)
+                .onAppear {
+                    // Start animation when view appears
+                    withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+                        isAnimating = true
+                    }
+                }
+            
+            Text("İşletmeler Yükleniyor...")
+                .font(.headline)
+                .foregroundColor(.gray)
+            
             Spacer()
         }
     }

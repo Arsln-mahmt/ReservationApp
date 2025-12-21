@@ -26,6 +26,9 @@ struct BusinessOverviewScene: View {
                     // Quick Actions
                     quickActionsSection
                     
+                    // Availability Management (NEW)
+                    availabilitySection
+                    
                     // Today's Appointments
                     todayAppointmentsSection
                 }
@@ -54,18 +57,18 @@ struct BusinessOverviewScene: View {
                     .fill(LinearGradient.primaryGradient)
                     .frame(width: 80, height: 80)
                 
-                Text((authManager.currentUser?.businessName ?? "İşletme").prefix(1))
+                Text((viewModel.businessName.isEmpty ? (authManager.currentUser?.businessName ?? "İ") : viewModel.businessName).prefix(1))
                     .font(.system(size: 36))
                     .fontWeight(.bold)
                     .foregroundColor(.white)
             }
             
-            Text(authManager.currentUser?.businessName ?? "İşletme")
+            Text(viewModel.businessName.isEmpty ? (authManager.currentUser?.businessName ?? "İşletme") : viewModel.businessName)
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(.textPrimary)
             
-            Text(authManager.currentUser?.businessCategory ?? "")
+            Text(viewModel.businessCategory.isEmpty ? (authManager.currentUser?.businessCategory ?? "") : viewModel.businessCategory)
                 .font(.subheadline)
                 .foregroundColor(.textSecondary)
         }
@@ -140,6 +143,86 @@ struct BusinessOverviewScene: View {
                     }
                 )
             }
+        }
+    }
+    
+    // MARK: - Availability Section
+    private var availabilitySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Müsaitlik Yönetimi")
+                .font(.headline)
+                .foregroundColor(.textPrimary)
+            
+            VStack(spacing: 16) {
+                // Date Picker
+                DatePicker("Tarih Seçin", selection: $viewModel.selectedDate, displayedComponents: .date)
+                    .datePickerStyle(.compact)
+                    .padding(.horizontal)
+                    .onChange(of: viewModel.selectedDate) { _ in
+                        viewModel.loadAvailability()
+                    }
+                
+                if viewModel.isSlotLoading {
+                    ProgressView()
+                        .padding()
+                } else {
+                    // Slots Grid
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 10) {
+                        ForEach(viewModel.availabilitySlots) { slot in
+                            Button(action: {
+                                viewModel.toggleSlot(slot: slot)
+                            }) {
+                                Text(slot.time)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(slotStatusColor(slot.status, isText: true))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 8)
+                                    .background(slotStatusColor(slot.status, isText: false))
+                                    .cornerRadius(8)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(slot.status == .free ? Color.gray.opacity(0.3) : Color.clear, lineWidth: 1)
+                                    )
+                            }
+                            .disabled(slot.status == .booked)
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                
+                // Legend
+                HStack(spacing: 16) {
+                    legendItem(color: .green.opacity(0.15), text: "Boş")
+                    legendItem(color: .red.opacity(0.15), text: "Kapalı")
+                    legendItem(color: .blue.opacity(0.15), text: "Dolu")
+                }
+                .font(.caption)
+                .padding(.top, 4)
+            }
+            .padding(.vertical)
+            .background(Color.bgCard)
+            .cornerRadius(16)
+        }
+    }
+    
+    private func legendItem(color: Color, text: String) -> some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(color)
+                .frame(width: 8, height: 8)
+            Text(text)
+                .foregroundColor(.textSecondary)
+        }
+    }
+    
+    private func slotStatusColor(_ status: SlotStatus, isText: Bool) -> Color {
+        switch status {
+        case .free:
+            return isText ? .textPrimary : .bgPrimary
+        case .booked:
+            return isText ? .white : .blue
+        case .blocked:
+            return isText ? .red : .red.opacity(0.1)
         }
     }
     

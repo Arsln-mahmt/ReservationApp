@@ -31,6 +31,12 @@ struct BusinessListing: Codable, Identifiable {
     var claimedBy: String?           // User ID who claimed
     var hasActiveServices: Bool      // Does this business have services configured?
     
+    // Rich Details (Stored from Google or User Input)
+    var phoneNumber: String?
+    var website: String?
+    var openingHours: [String]?      // Weekly hours text
+    var photos: [String]?            // Additional photo URLs
+    
     // Computed unique identifier for SwiftUI lists
     var uniqueID: String {
         return id ?? googlePlaceId ?? UUID().uuidString
@@ -55,9 +61,13 @@ struct BusinessListing: Codable, Identifiable {
         case isClaimed
         case claimedBy
         case hasActiveServices
+        case phoneNumber
+        case website
+        case openingHours
+        case photos
     }
     
-    init(id: String? = nil, businessId: String, name: String, category: String, city: String, address: String, rating: Double? = nil, reviewCount: Int? = nil, imageURL: String? = nil, description: String? = nil, priceRange: String? = nil, isOpen: Bool? = nil, distance: Double? = nil, googlePlaceId: String? = nil, isGoogleListing: Bool = false, isClaimed: Bool = false, claimedBy: String? = nil, hasActiveServices: Bool = false) {
+    init(id: String? = nil, businessId: String, name: String, category: String, city: String, address: String, rating: Double? = nil, reviewCount: Int? = nil, imageURL: String? = nil, description: String? = nil, priceRange: String? = nil, isOpen: Bool? = nil, distance: Double? = nil, googlePlaceId: String? = nil, isGoogleListing: Bool = false, isClaimed: Bool = false, claimedBy: String? = nil, hasActiveServices: Bool = false, phoneNumber: String? = nil, website: String? = nil, openingHours: [String]? = nil, photos: [String]? = nil) {
         // Use googlePlaceId as id for Google businesses if id is not provided
         self.id = id ?? googlePlaceId
         self.businessId = businessId
@@ -77,6 +87,10 @@ struct BusinessListing: Codable, Identifiable {
         self.isClaimed = isClaimed
         self.claimedBy = claimedBy
         self.hasActiveServices = hasActiveServices
+        self.phoneNumber = phoneNumber
+        self.website = website
+        self.openingHours = openingHours
+        self.photos = photos
     }
     
     init(from decoder: Decoder) throws {
@@ -105,6 +119,11 @@ struct BusinessListing: Codable, Identifiable {
         isClaimed = try container.decodeIfPresent(Bool.self, forKey: .isClaimed) ?? false
         claimedBy = try container.decodeIfPresent(String.self, forKey: .claimedBy)
         hasActiveServices = try container.decodeIfPresent(Bool.self, forKey: .hasActiveServices) ?? false
+        
+        phoneNumber = try container.decodeIfPresent(String.self, forKey: .phoneNumber)
+        website = try container.decodeIfPresent(String.self, forKey: .website)
+        openingHours = try container.decodeIfPresent([String].self, forKey: .openingHours)
+        photos = try container.decodeIfPresent([String].self, forKey: .photos)
     }
     
     // For preview/testing
@@ -123,11 +142,6 @@ struct BusinessListing: Codable, Identifiable {
             priceRange: "$$",
             isOpen: true,
             distance: 2.5
-            
         )
-        
     }
 }
-
-
-

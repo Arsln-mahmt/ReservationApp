@@ -30,7 +30,10 @@ struct Reservation: Codable, Identifiable {
     
     // Computed property for display
     var displayBusinessName: String {
-        businessName ?? "İşletme"
+        if let name = businessName, !name.isEmpty {
+            return name
+        }
+        return "İşletme"
     }
     
     var displayCustomerName: String {

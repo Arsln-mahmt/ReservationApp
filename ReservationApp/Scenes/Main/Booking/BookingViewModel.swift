@@ -14,7 +14,7 @@ class BookingViewModel: ObservableObject {
     
     @Published var selectedDate = Date()
     @Published var selectedTimeSlot: String?
-    @Published var availableTimeSlots: [String] = []
+    @Published var availableTimeSlots: [BookingTimeSlot] = []
     @Published var notes = ""
     
     @Published var isLoadingSlots = false
@@ -34,11 +34,19 @@ class BookingViewModel: ObservableObject {
     func loadAvailableTimeSlots() {
         print("🔄 Loading time slots for \(business.name)")
         print("📅 Selected date: \(selectedDate)")
-        print("⏱️ Service duration: \(service.duration) minutes")
-        print("🏢 Business ID: \(business.businessId)")
         
         isLoadingSlots = true
         selectedTimeSlot = nil
+        
+        // Use standard hours 09:00 - 22:00
+        // We'll generate the full list manually here if Util is not accessible, 
+        // to ensure we cover all hours even if ReservationManager logic differs
+        var allPossibleSlots: [String] = []
+        for hour in 9..<22 {
+            for minute in [0, 30] {
+                allPossibleSlots.append(String(format: "%02d:%02d", hour, minute))
+            }
+        }
         
         reservationManager.getAvailableTimeSlots(
             businessId: business.businessId,
@@ -49,19 +57,16 @@ class BookingViewModel: ObservableObject {
                 self?.isLoadingSlots = false
                 
                 switch result {
-                case .success(let slots):
-                    if slots.isEmpty {
-                        print("⚠️ No slots returned from manager, generating manually!")
-                        self?.generateManualSlots()
-                    } else {
-                        self?.availableTimeSlots = slots
-                        print("✅ Found \(slots.count) available time slots")
-                        print("📝 First 5: \(slots.prefix(5).joined(separator: ", "))")
+                case .success(let availableStrings):
+                    // Map to model: If it's in the 'availableStrings' list, it is available.
+                    // If NOT, it means it's booked/blocked/cancelled(maybe).
+                    self?.availableTimeSlots = allPossibleSlots.map { time in
+                        BookingTimeSlot(time: time, isAvailable: availableStrings.contains(time))
                     }
+                    print("✅ Processed \(self?.availableTimeSlots.count ?? 0) slots (Total)")
                     
                 case .failure(let error):
                     print("❌ Failed to load time slots: \(error.localizedDescription)")
-                    print("⚠️ Generating manual slots as fallback")
                     self?.generateManualSlots()
                 }
             }
@@ -69,14 +74,16 @@ class BookingViewModel: ObservableObject {
     }
     
     private func generateManualSlots() {
-        // Generate manual time slots as absolute fallback
-        availableTimeSlots = [
-            "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-            "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-            "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"
-        ]
-        print("✅ Generated \(availableTimeSlots.count) manual time slots")
-        print("📝 Slots: \(availableTimeSlots)")
+        // Fallback: All slots available
+        var slots: [BookingTimeSlot] = []
+        for hour in 9..<22 {
+            for minute in [0, 30] {
+                let time = String(format: "%02d:%02d", hour, minute)
+                slots.append(BookingTimeSlot(time: time, isAvailable: true))
+            }
+        }
+        availableTimeSlots = slots
+        print("✅ Generated \(availableTimeSlots.count) manual slots")
     }
     
     func createReservation(customerId: String, customerName: String, customerPhone: String?) {
@@ -182,6 +189,13 @@ class BookingViewModel: ObservableObject {
         availableTimeSlots = []
         print("✅ BookingViewModel reset complete")
     }
+}
+
+// MARK: - Models
+struct BookingTimeSlot: Identifiable {
+    let id = UUID()
+    let time: String
+    var isAvailable: Bool
 }
 
 

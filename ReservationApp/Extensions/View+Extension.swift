@@ -35,6 +35,7 @@ extension View {
             .frame(maxWidth: .infinity)
             .background(LinearGradient.primaryGradient)
             .cornerRadius(12)
+            .contentShape(Rectangle())
             .shadow(color: Color.primaryOrange.opacity(0.3), radius: 8, x: 0, y: 4)
     }
     
@@ -51,6 +52,7 @@ extension View {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(Color.primaryOrange, lineWidth: 2)
             )
+            .contentShape(Rectangle())
     }
     
     /// Text field style

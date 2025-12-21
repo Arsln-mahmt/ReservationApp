@@ -333,6 +333,8 @@ struct ReservationDetailSheet: View {
             return "clock.fill"
         case .noShow:
             return "exclamationmark.triangle.fill"
+        case .blocked:
+            return "lock.fill"
         }
     }
     
@@ -349,6 +351,8 @@ struct ReservationDetailSheet: View {
             return LinearGradient.primaryGradient
         case .noShow:
             return LinearGradient(colors: [.gray, .gray.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
+        case .blocked:
+            return LinearGradient(colors: [.red.opacity(0.8), .red.opacity(0.6)], startPoint: .topLeading, endPoint: .bottomTrailing)
         }
     }
     

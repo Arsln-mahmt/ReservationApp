@@ -25,7 +25,7 @@ class GooglePlacesManager {
     func searchNearbyBusinesses(
         location: CLLocationCoordinate2D,
         radius: Int = 5000, // meters
-        type: String = "beauty_salon|hair_care|spa|dentist|doctor",
+        type: String = "beauty_salon|hair_care|spa|dentist|doctor|car_wash",
         completion: @escaping (Result<[GooglePlace], Error>) -> Void
     ) {
         // Use legacy API endpoint
@@ -149,7 +149,7 @@ class GooglePlacesManager {
         placeId: String,
         completion: @escaping (Result<GooglePlaceDetails, Error>) -> Void
     ) {
-        let urlString = "\(baseURL)/details/json?place_id=\(placeId)&fields=name,formatted_address,formatted_phone_number,opening_hours,website,rating,user_ratings_total,photos,geometry&key=\(apiKey)&language=tr"
+        let urlString = "\(baseURL)/details/json?place_id=\(placeId)&fields=name,formatted_address,formatted_phone_number,opening_hours,website,rating,user_ratings_total,photos,geometry,types&key=\(apiKey)&language=tr"
         
         guard let url = URL(string: urlString) else {
             completion(.failure(NSError(domain: "Invalid URL", code: -1)))
@@ -213,6 +213,7 @@ struct GooglePlace: Codable, Identifiable {
     let types: [String]?
     let photos: [GooglePhoto]?
     let business_status: String?
+    let opening_hours: GoogleOpeningHours?
     
     var id: String { place_id }
 }
@@ -249,6 +250,7 @@ struct GooglePlaceDetails: Codable {
     let opening_hours: GoogleOpeningHours?
     let photos: [GooglePhoto]?
     let geometry: GoogleGeometry
+    let types: [String]?
 }
 
 struct GoogleOpeningHours: Codable {

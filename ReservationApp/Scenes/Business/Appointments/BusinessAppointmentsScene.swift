@@ -201,6 +201,8 @@ struct StatusBadge: View {
             return .blue
         case .noShow:
             return .yellow
+        case .blocked:
+            return .red.opacity(0.8)
         }
     }
 }

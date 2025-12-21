@@ -18,6 +18,7 @@ struct ProfileScene: View {
     @State private var showNotifications = false
     @State private var showFavorites = false
     @State private var showSettings = false
+    @State private var showAdminPanel = false
     @Binding var shouldShowLogin: Bool
     
     init(shouldShowLogin: Binding<Bool> = .constant(false)) {
@@ -58,6 +59,9 @@ struct ProfileScene: View {
             }
             .sheet(isPresented: $showSettings) {
                 SettingsScene()
+            }
+            .sheet(isPresented: $showAdminPanel) {
+                AdminDashboard()
             }
             .alert("Çıkış Yap", isPresented: $showLogoutAlert) {
                 Button("İptal", role: .cancel) {}
@@ -118,6 +122,7 @@ struct ProfileScene: View {
                         .padding()
                         .background(LinearGradient.primaryGradient)
                         .cornerRadius(12)
+                        .contentShape(Rectangle())
                 }
                 .padding(.horizontal, 40)
                 .shadow(color: Color.primaryOrange.opacity(0.3), radius: 8, y: 4)
@@ -214,6 +219,14 @@ struct ProfileScene: View {
                     
                     MenuButton(icon: "gearshape.fill", title: "Ayarlar") {
                         showSettings = true
+                    }
+                    
+                    // Admin Panel Access (Hidden for regular users)
+                    if user.email.lowercased() == "admin@app.com" || user.email.lowercased() == "mahmut@test.com" { // Buraya kendi emailini ekle
+                        Divider().padding(.leading, 60)
+                        MenuButton(icon: "shield.fill", title: "Yönetici Paneli") {
+                            showAdminPanel = true
+                        }
                     }
                 }
                 .background(Color.bgCard)

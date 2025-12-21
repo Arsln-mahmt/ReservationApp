@@ -13,21 +13,55 @@ struct BusinessCardRow: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Image placeholder
-            RoundedRectangle(cornerRadius: 12)
-                .fill(
-                    LinearGradient(
-                        colors: [.orange.opacity(0.3), .red.opacity(0.2)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+            // Image (AsyncImage or Placeholder)
+            if let imageURL = business.imageURL, let url = URL(string: imageURL) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .empty:
+                        ProgressView()
+                            .frame(height: 140)
+                            .frame(maxWidth: .infinity)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(12)
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 140)
+                            .frame(maxWidth: .infinity)
+                            .clipped()
+                            .cornerRadius(12)
+                    case .failure:
+                        // Placeholder on failure
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.gray.opacity(0.1))
+                            .frame(height: 140)
+                            .overlay(
+                                Image(systemName: "photo")
+                                    .font(.title)
+                                    .foregroundColor(.gray)
+                            )
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+            } else {
+                // Default placeholder
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(
+                        LinearGradient(
+                            colors: [.orange.opacity(0.3), .red.opacity(0.2)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
-                .frame(height: 140)
-                .overlay(
-                    Image(systemName: "building.2.fill")
-                        .font(.system(size: 40))
-                        .foregroundColor(.orange.opacity(0.5))
-                )
+                    .frame(height: 140)
+                    .overlay(
+                        Image(systemName: "building.2.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(.orange.opacity(0.5))
+                    )
+            }
             
             VStack(alignment: .leading, spacing: 8) {
                 // Name

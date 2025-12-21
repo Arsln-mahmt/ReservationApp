@@ -110,15 +110,15 @@ struct BookingUI: View {
                     .padding()
             } else {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 80))], spacing: 12) {
-                    ForEach(viewModel.availableTimeSlots, id: \.self) { timeSlot in
+                    ForEach(viewModel.availableTimeSlots) { slot in
                         TimeSlotButton(
-                            timeSlot: timeSlot,
-                            isSelected: viewModel.selectedTimeSlot == timeSlot
+                            slot: slot,
+                            isSelected: viewModel.selectedTimeSlot == slot.time
                         ) {
-                            print("⏰ Time slot tapped: \(timeSlot)")
-                            print("📍 Before: selectedTimeSlot = \(viewModel.selectedTimeSlot ?? "nil")")
-                            viewModel.selectedTimeSlot = timeSlot
-                            print("✅ After: selectedTimeSlot = \(viewModel.selectedTimeSlot ?? "nil")")
+                            if slot.isAvailable {
+                                print("⏰ Time slot tapped: \(slot.time)")
+                                viewModel.selectedTimeSlot = slot.time
+                            }
                         }
                     }
                 }
@@ -217,33 +217,50 @@ struct BookingUI: View {
 
 // MARK: - Time Slot Button
 struct TimeSlotButton: View {
-    let timeSlot: String
+    let slot: BookingTimeSlot
     let isSelected: Bool
     let action: () -> Void
     
     var body: some View {
-        Button(action: {
-            print("🔘 TimeSlotButton tapped: \(timeSlot)")
-            action()
-        }) {
-            Text(timeSlot)
+        Button(action: action) {
+            Text(slot.time)
                 .font(.subheadline)
                 .fontWeight(isSelected ? .semibold : .regular)
-                .foregroundColor(isSelected ? .white : .textPrimary)
+                .foregroundColor(textColor)
+                .strikethrough(!slot.isAvailable, color: .red.opacity(0.5))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-                .background(
-                    isSelected ?
-                    LinearGradient.primaryGradient :
-                    LinearGradient(colors: [Color.bgPrimary, Color.bgPrimary], startPoint: .leading, endPoint: .trailing)
-                )
+                .background(backgroundColor)
                 .cornerRadius(8)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(isSelected ? Color.clear : Color.gray.opacity(0.3), lineWidth: 1)
+                        .stroke(borderColor, lineWidth: 1)
                 )
         }
         .buttonStyle(PlainButtonStyle())
+        .disabled(!slot.isAvailable)
+    }
+    
+    private var textColor: Color {
+        if !slot.isAvailable { return .gray }
+        return isSelected ? .white : .textPrimary
+    }
+    
+    private var backgroundColor: some View {
+        Group {
+            if !slot.isAvailable {
+                Color.gray.opacity(0.1)
+            } else if isSelected {
+                LinearGradient.primaryGradient
+            } else {
+                Color.bgPrimary
+            }
+        }
+    }
+    
+    private var borderColor: Color {
+        if isSelected || !slot.isAvailable { return .clear }
+        return .gray.opacity(0.3)
     }
 }
 

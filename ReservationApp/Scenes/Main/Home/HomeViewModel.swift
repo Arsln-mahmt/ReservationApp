@@ -20,6 +20,7 @@ class HomeViewModel: ObservableObject {
     @Published var showCityPicker = false
     @Published var showGoogleBusinesses = true  // Toggle to show/hide Google businesses
     @Published var selectedBusiness: BusinessListing?  // For sheet presentation
+    @Published var hasBusiness = false // If user owns a business
     
     let categories = ["Tümü", "Kuaför & Güzellik", "Klinik", "Restoran", "Spor Salonu", "Diğer"]
     
@@ -32,6 +33,9 @@ class HomeViewModel: ObservableObject {
         
         // Load Firebase businesses directly
         loadFirebaseBusinessesDirect()
+        
+        // Check if current user has a business
+        checkBusinessStatus()
     }
     
     // MARK: - Load/Save City
@@ -56,6 +60,7 @@ class HomeViewModel: ObservableObject {
     func loadBusinesses() {
         print("📝 Loading businesses...")
         loadFirebaseBusinessesDirect()
+        checkBusinessStatus()
     }
     
     // MARK: - Load Firebase Businesses Directly
@@ -65,24 +70,26 @@ class HomeViewModel: ObservableObject {
         
         businessListingManager.getAllBusinessListings { [weak self] result in
             DispatchQueue.main.async {
-                self?.isLoading = false
+                guard let self = self else { return }
                 
                 switch result {
                 case .success(let listings):
                     print("✅ Loaded \(listings.count) businesses from Firebase")
-                    self?.businesses = listings
+                    self.businesses = listings
                     
                 case .failure(let error):
                     print("❌ Failed to load businesses: \(error)")
                     // Load fallback test data if Firebase fails
-                    self?.loadFallbackTestData()
+                    self.loadFallbackTestData()
                 }
                 
                 // Load Google Businesses after Firebase (safely)
-                if self?.showGoogleBusinesses == true {
-                    self?.loadGoogleBusinesses()
+                // Do NOT set isLoading = false yet if we are going to load Google businesses
+                if self.showGoogleBusinesses && !self.selectedCity.isEmpty {
+                    self.loadGoogleBusinesses()
                 } else {
-                    self?.applyFilters()
+                    self.applyFilters()
+                    self.isLoading = false
                 }
             }
         }
@@ -286,6 +293,32 @@ class HomeViewModel: ObservableObject {
         // TODO: Get user's current city from LocationManager
         print("📍 Using current location...")
         // For now, just keep the selected city
+    }
+    
+    // MARK: - Check Business Ownership
+    func checkBusinessStatus() {
+        guard let user = AuthManager.shared.currentUser else {
+            self.hasBusiness = false
+            return
+        }
+        
+        // Check if user owns any business
+        let db = Firestore.firestore()
+        db.collection("businesses")
+            .whereField("businessId", isEqualTo: user.uid)
+            .limit(to: 1)
+            .getDocuments { [weak self] snapshot, error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        print("❌ Error checking business status: \(error)")
+                        self?.hasBusiness = false
+                    } else {
+                        // If documents exist, user is a business owner
+                        self?.hasBusiness = !(snapshot?.documents.isEmpty ?? true)
+                        print("🏢 User business status: \(self?.hasBusiness ?? false)")
+                    }
+                }
+            }
     }
 }
 

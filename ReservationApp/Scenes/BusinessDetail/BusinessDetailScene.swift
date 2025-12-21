@@ -14,15 +14,44 @@ struct BusinessDetailScene: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // Placeholder image only
-                Rectangle()
-                    .fill(LinearGradient.primaryGradient.opacity(0.3))
-                    .frame(maxWidth: .infinity, minHeight: 200)
-                    .overlay(
-                        Image(systemName: "building.2.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.primaryOrange.opacity(0.5))
-                    )
+                // Image (AsyncImage or Placeholder)
+                if let imageURL = business.imageURL, let url = URL(string: imageURL) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .empty:
+                            ProgressView()
+                                .frame(maxWidth: .infinity, minHeight: 200)
+                                .background(Color.gray.opacity(0.1))
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(maxWidth: .infinity, minHeight: 200, maxHeight: 300)
+                                .clipped()
+                        case .failure:
+                            Rectangle()
+                                .fill(LinearGradient.primaryGradient.opacity(0.3))
+                                .frame(maxWidth: .infinity, minHeight: 200)
+                                .overlay(
+                                    Image(systemName: "photo")
+                                        .font(.system(size: 60))
+                                        .foregroundColor(.gray)
+                                )
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                } else {
+                    // Placeholder image
+                    Rectangle()
+                        .fill(LinearGradient.primaryGradient.opacity(0.3))
+                        .frame(maxWidth: .infinity, minHeight: 200)
+                        .overlay(
+                            Image(systemName: "building.2.fill")
+                                .font(.system(size: 60))
+                                .foregroundColor(.primaryOrange.opacity(0.5))
+                        )
+                }
                 
                 // Basic Info
                 VStack(alignment: .leading, spacing: 8) {

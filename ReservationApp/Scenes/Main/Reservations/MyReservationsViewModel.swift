@@ -51,6 +51,7 @@ class MyReservationsViewModel: ObservableObject {
                             case .completed: statusIcon = "✔️"
                             case .noShow: statusIcon = "👻"
                             case .cancelled: statusIcon = "❌"
+                            case .blocked: statusIcon = "⛔"
                             }
                             print("      \(index + 1). \(statusIcon) [\(reservation.status.rawValue)] \(reservation.displayBusinessName): \(reservation.serviceType)")
                             print("         Created: \(reservation.createdAt.dateValue())")
@@ -62,7 +63,8 @@ class MyReservationsViewModel: ObservableObject {
                     }
                     print(String(repeating: "✅", count: 25) + "\n")
                     
-                    self?.reservations = reservations
+                    // Filter out blocked reservations (they are internal business slots, not customer bookings)
+                    self?.reservations = reservations.filter { $0.status != .blocked }
                     print("📝 ViewModel reservations array updated. New count: \(self?.reservations.count ?? 0)")
                     
                 case .failure(let error):

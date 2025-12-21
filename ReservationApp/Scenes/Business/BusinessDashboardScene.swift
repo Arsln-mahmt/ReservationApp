@@ -127,6 +127,10 @@ struct BusinessDashboardScene: View {
         .transition(.move(edge: .top))
     }
     
+    @State private var hasAttemptedAutoShow = false // Flag to prevent loop
+
+
+
     // MARK: - Check Business Setup
     private func checkBusinessSetup() {
         guard let userId = authManager.currentUser?.uid else {
@@ -142,19 +146,23 @@ struct BusinessDashboardScene: View {
                     isCheckingSetup = false
                     
                     if let error = error {
-                        // Error, but show dashboard anyway
                         needsSetup = true
                         return
                     }
                     
                     if let documents = snapshot?.documents, !documents.isEmpty {
-                        // Business listing exists, dashboard is ready
+                        // Business listing exists
                         businessListing = try? documents.first?.data(as: BusinessListing.self)
                         needsSetup = false
                     } else {
                         // No business listing, needs setup
                         needsSetup = true
-                        showSetupWizard = true
+                        
+                        // Only auto-show ONCE
+                        if !hasAttemptedAutoShow {
+                            showSetupWizard = true
+                            hasAttemptedAutoShow = true
+                        }
                     }
                 }
             }

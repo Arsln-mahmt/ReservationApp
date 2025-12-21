@@ -237,6 +237,7 @@ class ReservationManager: ObservableObject {
                 case .completed: statusIcon = "✔️"
                 case .noShow: statusIcon = "👻"
                 case .cancelled: statusIcon = "❌"
+                case .blocked: statusIcon = "⛔"
                 }
                 print("   \(index + 1). \(statusIcon) \(reservation.displayBusinessName): \(reservation.serviceType)")
                 print("      Created: \(reservation.createdAt.dateValue()) | Appt: \(reservation.date.dateValue()) \(reservation.timeSlot)")
@@ -466,66 +467,73 @@ class ReservationManager: ObservableObject {
         print("🕒 Getting available time slots for businessId: \(businessId)")
         print("📅 Date: \(date)")
         
-        // Generate all possible slots FIRST (even before Firebase query)
+        // Generate all possible slots FIRST
         let allSlots = Util.generateTimeSlots(
             startHour: 9,
-            endHour: 18,
-            interval: 30  // Fixed 30-minute intervals
+            endHour: 22,
+            interval: 30
         )
         
-        print("🔢 Generated \(allSlots.count) total time slots")
-        print("📝 All slots: \(allSlots)")
-        
-        // If no slots generated, return error
         if allSlots.isEmpty {
-            print("❌ No slots generated!")
             completion(.failure(NSError(domain: "ReservationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not generate time slots"])))
             return
         }
         
-        // Get reservations for this date
         let startOfDay = Calendar.current.startOfDay(for: date)
         let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
         
+        // Use DispatchGroup to fetch both reservations and blocked slots
+        let group = DispatchGroup()
+        var bookedSlots: [String] = []
+        var blockedSlots: [String] = []
+        
+        // 1. Fetch reservations
+        group.enter()
         db.collection(Constant.reservationsCollection)
             .whereField("business_id", isEqualTo: businessId)
             .whereField("date", isGreaterThanOrEqualTo: Timestamp(date: startOfDay))
             .whereField("date", isLessThan: Timestamp(date: endOfDay))
             .getDocuments { snapshot, error in
-                
-                if let error = error {
-                    print("⚠️ Error fetching reservations (but continuing with all slots): \(error)")
-                    // Even if there's an error, return all slots as available
-                    completion(.success(allSlots))
-                    return
-                }
-                
-                // Get booked slots (excluding cancelled reservations)
-                let bookedSlots = snapshot?.documents.compactMap { doc -> String? in
-                    guard let reservation = try? doc.data(as: Reservation.self) else { return nil }
-                    // Only count non-cancelled reservations
-                    if reservation.status == .cancelled {
-                        print("   ⏭️ Skipping cancelled reservation at \(reservation.timeSlot)")
-                        return nil
+                if let docs = snapshot?.documents {
+                    bookedSlots = docs.compactMap { doc -> String? in
+                        let data = doc.data()
+                        let statusStr = data["status"] as? String
+                        let timeSlot = data["time"] as? String
+                        
+                        // Skip cancelled
+                        if statusStr == "cancelled" { return nil }
+                        return timeSlot
                     }
-                    return reservation.timeSlot
-                } ?? []
-                
-                print("📋 Found \(bookedSlots.count) booked slots (excluding cancelled): \(bookedSlots)")
-                
-                // Filter out booked slots
-                let availableSlots = allSlots.filter { !bookedSlots.contains($0) }
-                
-                print("✅ Available slots: \(availableSlots.count)")
-                print("📝 Available: \(availableSlots)")
-                
-                // If no available slots, still return all slots (better than nothing)
-                if availableSlots.isEmpty && allSlots.count > 0 {
-                    print("⚠️ All slots booked, but returning them anyway for testing")
-                    completion(.success(allSlots))
-                } else {
-                    completion(.success(availableSlots))
                 }
+                print("📋 Found \(bookedSlots.count) booked slots from reservations")
+                group.leave()
             }
+        
+        // 2. Fetch blocked slots
+        group.enter()
+        db.collection("blocked_slots")
+            .whereField("business_id", isEqualTo: businessId)
+            .whereField("date", isGreaterThanOrEqualTo: Timestamp(date: startOfDay))
+            .whereField("date", isLessThan: Timestamp(date: endOfDay))
+            .getDocuments { snapshot, error in
+                if let docs = snapshot?.documents {
+                    blockedSlots = docs.compactMap { doc -> String? in
+                        return doc.data()["time"] as? String
+                    }
+                }
+                print("🔒 Found \(blockedSlots.count) blocked slots")
+                group.leave()
+            }
+        
+        // 3. Combine and filter
+        group.notify(queue: .main) {
+            let unavailableSlots = Set(bookedSlots + blockedSlots)
+            let availableSlots = allSlots.filter { !unavailableSlots.contains($0) }
+            
+            print("✅ Available slots: \(availableSlots.count)")
+            print("📝 Unavailable: \(unavailableSlots)")
+            
+            completion(.success(availableSlots))
+        }
     }
 }

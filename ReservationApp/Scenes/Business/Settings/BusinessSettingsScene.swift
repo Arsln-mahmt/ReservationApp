@@ -10,6 +10,7 @@ import Combine
 import FirebaseFirestore
 
 struct BusinessSettingsScene: View {
+    @Environment(\.dismiss) var dismiss
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @EnvironmentObject var appEnvironment: AppEnvironment
@@ -52,7 +53,19 @@ struct BusinessSettingsScene: View {
                     authManager.signOut()
                     appEnvironment.isAuthenticated = false
                     appEnvironment.currentUser = nil
-                    sceneDelegate.navigateTo(.mainApp)
+                    
+                    // Post notification to close dashboard from HomeUI
+                    NotificationCenter.default.post(name: .dismissBusinessDashboard, object: nil)
+                    
+                    // Force dismiss via UIKit (to ensure fullScreenCover closes)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        let scenes = UIApplication.shared.connectedScenes
+                        let windowScene = scenes.first as? UIWindowScene
+                        if let window = windowScene?.windows.first(where: { $0.isKeyWindow }) {
+                            // Dismiss any presented view controller (like fullScreenCover)
+                            window.rootViewController?.dismiss(animated: true, completion: nil)
+                        }
+                    }
                 }
             } message: {
                 Text("Çıkış yapmak istediğinize emin misiniz?")
@@ -668,3 +681,8 @@ struct StaffManagementSheet: View {
 
 
 
+
+// Extension for Notification
+extension Notification.Name {
+    static let dismissBusinessDashboard = Notification.Name("dismissBusinessDashboard")
+}

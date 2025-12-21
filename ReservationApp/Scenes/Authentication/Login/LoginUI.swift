@@ -168,8 +168,16 @@ struct LoginUI: View {
                     Text("Giriş Yap")
                 }
             }
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundColor(.white)
+            .padding(.vertical, 16)
+            .padding(.horizontal, 32)
+            .frame(maxWidth: .infinity)
+            .background(LinearGradient.primaryGradient)
+            .cornerRadius(12)
+            .contentShape(Rectangle())
+            .shadow(color: Color.primaryOrange.opacity(0.3), radius: 8, x: 0, y: 4)
         }
-        .primaryButtonStyle()
         .disabled(viewModel.isLoading)
     }
     
@@ -206,8 +214,18 @@ struct LoginUI: View {
                     .font(.system(size: 20))
                 Text("Hesap Oluştur")
             }
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundColor(.primaryOrange)
+            .padding(.vertical, 16)
+            .padding(.horizontal, 32)
+            .frame(maxWidth: .infinity)
+            .background(Color.white)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.primaryOrange, lineWidth: 2)
+            )
+            .contentShape(Rectangle())
         }
-        .secondaryButtonStyle()
     }
 }
 

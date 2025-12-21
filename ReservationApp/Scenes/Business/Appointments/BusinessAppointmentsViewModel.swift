@@ -25,15 +25,18 @@ class BusinessAppointmentsViewModel: ObservableObject {
     private let authManager = AuthManager.shared
     
     var filteredAppointments: [Reservation] {
+        // Filter out blocked slots from the list view
+        let baseList = appointments.filter { $0.status != .blocked }
+        
         switch selectedFilter {
         case .all:
-            return appointments
+            return baseList
         case .today:
-            return appointments.filter { Calendar.current.isDateInToday($0.date.dateValue()) }
+            return baseList.filter { Calendar.current.isDateInToday($0.date.dateValue()) }
         case .upcoming:
-            return appointments.filter { $0.date.dateValue() > Date() && $0.status != .completed }
+            return baseList.filter { $0.date.dateValue() > Date() && $0.status != .completed }
         case .completed:
-            return appointments.filter { $0.status == .completed }
+            return baseList.filter { $0.status == .completed }
         }
     }
     

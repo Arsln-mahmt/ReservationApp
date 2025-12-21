@@ -126,18 +126,20 @@ struct VoiceAssistantChatView: View {
             .padding(.bottom, 8)
         }
         .padding()
-        .background(Color.bgCard)
+        .background(Color.bgPrimary)
+        .background(Color.bgPrimary.ignoresSafeArea(edges: .bottom))
     }
     
     // MARK: - Actions
     private func handleMicrophoneButtonTap() {
-        // Check if user is logged in
-        guard authManager.currentUser != nil else {
+        // Check if user is logged in with valid UID
+        guard let user = authManager.currentUser, !user.uid.isEmpty else {
             showLoginRequired = true
             return
         }
         
-        let userId = authManager.currentUser?.uid ?? "test_user"
+        let userId = user.uid
+        print("🎤 Voice Assistant - User ID: \(userId)")
         
         if viewModel.isRecording {
             // Stop and send

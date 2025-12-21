@@ -15,6 +15,7 @@ enum ReservationStatus: String, Codable, CaseIterable {
     case completed = "completed"    // Completed
     case cancelled = "cancelled"    // Cancelled
     case noShow = "no_show"        // No show
+    case blocked = "blocked"       // Blocked by business
     
     var displayName: String {
         switch self {
@@ -28,6 +29,8 @@ enum ReservationStatus: String, Codable, CaseIterable {
             return "İptal Edildi"
         case .noShow:
             return "Gelmedi"
+        case .blocked:
+            return "Kapalı"
         }
     }
     
@@ -43,6 +46,8 @@ enum ReservationStatus: String, Codable, CaseIterable {
             return .red
         case .noShow:
             return .gray
+        case .blocked:
+            return .red.opacity(0.8)
         }
     }
 }

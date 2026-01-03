@@ -14,11 +14,13 @@ struct BusinessSettingsScene: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @EnvironmentObject var appEnvironment: AppEnvironment
+    @StateObject private var notificationManager = BusinessNotificationManager.shared
     @State private var showLogoutAlert = false
     @State private var showBusinessInfoSheet = false
     @State private var showWorkingHoursSheet = false
     @State private var showServicesSheet = false
     @State private var showStaffSheet = false
+    @State private var showNotificationsSheet = false
     
     // Parameters from parent
     var needsSetup: Bool = false
@@ -81,6 +83,15 @@ struct BusinessSettingsScene: View {
             }
             .sheet(isPresented: $showStaffSheet) {
                 StaffManagementSheet()
+            }
+            .sheet(isPresented: $showNotificationsSheet) {
+                BusinessNotificationsScene()
+            }
+            .onAppear {
+                // Start listening for notifications
+                if let businessId = authManager.currentUser?.uid {
+                    notificationManager.startListening(businessId: businessId)
+                }
             }
         }
     }
@@ -239,11 +250,12 @@ struct BusinessSettingsScene: View {
                 .foregroundColor(.textPrimary)
             
             VStack(spacing: 0) {
-                SettingsButton(
+                SettingsButtonWithBadge(
                     icon: "bell.fill",
                     title: "Bildirimler",
-                    subtitle: "Bildirim ayarlarını yönetin",
-                    action: {}
+                    subtitle: notificationManager.unreadCount > 0 ? "\(notificationManager.unreadCount) yeni bildirim" : "Bildirimlerinizi görüntüleyin",
+                    badgeCount: notificationManager.unreadCount,
+                    action: { showNotificationsSheet = true }
                 )
                 
                 Divider().padding(.leading, 50)

@@ -19,7 +19,7 @@ Pods/
 .build/
 Package.resolved
 
-# API Keys - DO NOT COMMIT!
+
 Config.swift
 
 # Firebase

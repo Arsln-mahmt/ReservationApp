@@ -8,14 +8,24 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var showTestView = false
+    
     var body: some View {
-        VStack {
+        VStack(spacing: 20) {
             Image(systemName: "globe")
                 .imageScale(.large)
                 .foregroundStyle(.tint)
-            Text("Hello, world!")
+            Text("Hello, world !")
+            
+            Button("Google Places API Test") {
+                showTestView = true
+            }
+            .buttonStyle(.borderedProminent)
         }
         .padding()
+        .sheet(isPresented: $showTestView) {
+            GooglePlacesTestView()
+        }
     }
 }
 

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyAaUwq8B3G0Ozd3lKR3GhA_Q1Y7lYOCzXg</string>
+	<key>GCM_SENDER_ID</key>
+	<string>417699461961</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.mahmutarslan.ReservationApp</string>
+	<key>PROJECT_ID</key>
+	<string>reservationapp-6ff1f</string>
+	<key>STORAGE_BUCKET</key>
+	<string>reservationapp-6ff1f.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false/>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false/>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true/>
+	<key>IS_GCM_ENABLED</key>
+	<true/>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true/>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:417699461961:ios:7f68323b1614936ba77898</string>
+</dict>
+</plist>

@@ -199,7 +199,7 @@ struct SimpleBusinessDetail: View {
                                     showLoginAlert = true
                                 }
                             } label: {
-                                Text("İşletme sahibi misiniz? Sahiplen")
+                                Text("İşletme sahibi misiniz?")
                                     .font(.footnote)
                                     .foregroundColor(.primaryOrange)
                                     .padding(.vertical, 8)

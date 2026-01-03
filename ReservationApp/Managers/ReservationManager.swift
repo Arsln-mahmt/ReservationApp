@@ -75,6 +75,38 @@ class ReservationManager: ObservableObject {
             print("   Customer ID: \(customerId)")
             print(String(repeating: "✅", count: 25) + "\n")
             
+            // 🔔 Send notification to business
+            print("🔔 SENDING NOTIFICATION TO BUSINESS...")
+            print("   Business ID: \(businessId)")
+            print("   Customer Name: \(customerName)")
+            print("   Service: \(serviceType)")
+            
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "dd MMM yyyy"
+            dateFormatter.locale = Locale(identifier: "tr_TR")
+            let dateString = dateFormatter.string(from: date)
+            
+            print("   Date String: \(dateString)")
+            print("   Time Slot: \(timeSlot)")
+            
+            BusinessNotificationManager.shared.createNewReservationNotification(
+                businessId: businessId,
+                reservationId: docRef.documentID,
+                customerName: customerName,
+                serviceName: serviceType,
+                appointmentDate: dateString,
+                appointmentTime: timeSlot
+            ) { result in
+                switch result {
+                case .success(let notificationId):
+                    print("✅ NOTIFICATION CREATED SUCCESSFULLY!")
+                    print("   Notification ID: \(notificationId)")
+                case .failure(let error):
+                    print("❌ NOTIFICATION CREATION FAILED!")
+                    print("   Error: \(error.localizedDescription)")
+                }
+            }
+            
             completion(.success(docRef.documentID))
         } catch {
             print("\n" + String(repeating: "❌", count: 25))
@@ -332,7 +364,71 @@ class ReservationManager: ObservableObject {
         reservationId: String,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
-        updateReservationStatus(reservationId: reservationId, status: .cancelled, completion: completion)
+        // First, fetch the reservation to get details for notification
+        db.collection(Constant.reservationsCollection)
+            .document(reservationId)
+            .getDocument { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("❌ Failed to fetch reservation for cancellation: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let data = snapshot?.data() else {
+                    print("⚠️ No reservation data found for cancellation")
+                    self.updateReservationStatus(reservationId: reservationId, status: .cancelled, completion: completion)
+                    return
+                }
+                
+                // Extract reservation details
+                let businessId = data["business_id"] as? String ?? ""
+                let customerName = data["user_name"] as? String ?? "Müşteri"
+                let serviceName = data["service_name"] as? String ?? "Hizmet"
+                let timeSlot = data["time"] as? String ?? ""
+                
+                // Check if cancelled within 10 minutes of creation
+                var wasWithin10Minutes = false
+                if let createdAt = data["created_at"] as? Timestamp {
+                    let createdDate = createdAt.dateValue()
+                    let now = Date()
+                    let interval = now.timeIntervalSince(createdDate)
+                    wasWithin10Minutes = interval < 600 // 10 minutes = 600 seconds
+                }
+                
+                // Format date for notification
+                var dateString = ""
+                if let dateTimestamp = data["date"] as? Timestamp {
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateFormat = "dd MMM yyyy"
+                    dateFormatter.locale = Locale(identifier: "tr_TR")
+                    dateString = dateFormatter.string(from: dateTimestamp.dateValue())
+                }
+                
+                // Update the reservation status
+                self.updateReservationStatus(reservationId: reservationId, status: .cancelled) { result in
+                    switch result {
+                    case .success:
+                        // 🔔 Send cancellation notification to business
+                        if !businessId.isEmpty {
+                            BusinessNotificationManager.shared.createCancelledReservationNotification(
+                                businessId: businessId,
+                                reservationId: reservationId,
+                                customerName: customerName,
+                                serviceName: serviceName,
+                                appointmentDate: dateString,
+                                appointmentTime: timeSlot,
+                                wasWithin10Minutes: wasWithin10Minutes
+                            )
+                        }
+                        completion(.success(()))
+                        
+                    case .failure(let error):
+                        completion(.failure(error))
+                    }
+                }
+            }
     }
     
     // MARK: - Confirm Reservation (Business)

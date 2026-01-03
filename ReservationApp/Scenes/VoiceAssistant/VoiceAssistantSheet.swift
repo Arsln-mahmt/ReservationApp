@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AVFoundation
+import FirebaseFirestore
 
 struct VoiceAssistantSheet: View {
     @Environment(\.dismiss) var dismiss
@@ -278,6 +279,22 @@ struct VoiceAssistantSheet: View {
                 case .success(let voiceResponse):
                     response = voiceResponse
                     
+                    // 🔔 Send notification to business if reservation was created
+                    if voiceResponse.reservation_created == true,
+                       let parsed = voiceResponse.parsed,
+                       let businessName = parsed.business_name {
+                        
+                        // Find businessId from business name
+                        self.findBusinessIdAndSendNotification(
+                            businessName: businessName,
+                            reservationId: voiceResponse.reservation_id,
+                            customerName: authManager.currentUser?.name ?? "Müşteri",
+                            serviceName: parsed.service ?? "Hizmet",
+                            appointmentDate: parsed.date ?? "",
+                            appointmentTime: parsed.time ?? ""
+                        )
+                    }
+                    
                     // Speak the response
                     speakText(voiceResponse.final_answer)
                     
@@ -287,6 +304,47 @@ struct VoiceAssistantSheet: View {
                 }
             }
         }
+    }
+    
+    // MARK: - Find Business ID and Send Notification
+    private func findBusinessIdAndSendNotification(
+        businessName: String,
+        reservationId: String?,
+        customerName: String,
+        serviceName: String,
+        appointmentDate: String,
+        appointmentTime: String
+    ) {
+        let db = FirebaseManager.shared.db
+        
+        // Search for business by name (case-insensitive would be better, but Firestore doesn't support it directly)
+        db.collection("businesses")
+            .whereField("name", isEqualTo: businessName)
+            .limit(to: 1)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("❌ Failed to find business for notification: \(error)")
+                    return
+                }
+                
+                guard let document = snapshot?.documents.first,
+                      let businessId = document.data()["businessId"] as? String else {
+                    print("⚠️ Business not found for notification: \(businessName)")
+                    return
+                }
+                
+                // Create notification
+                BusinessNotificationManager.shared.createNewReservationNotification(
+                    businessId: businessId,
+                    reservationId: reservationId ?? UUID().uuidString,
+                    customerName: customerName,
+                    serviceName: serviceName,
+                    appointmentDate: appointmentDate,
+                    appointmentTime: appointmentTime
+                )
+                
+                print("✅ Notification sent to business: \(businessId)")
+            }
     }
     
     private func speakText(_ text: String) {

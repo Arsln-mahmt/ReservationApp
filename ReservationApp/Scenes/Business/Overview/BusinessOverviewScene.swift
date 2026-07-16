@@ -158,7 +158,7 @@ struct BusinessOverviewScene: View {
                 DatePicker("Tarih Seçin", selection: $viewModel.selectedDate, displayedComponents: .date)
                     .datePickerStyle(.compact)
                     .padding(.horizontal)
-                    .onChange(of: viewModel.selectedDate) { _ in
+                    .onChange(of: viewModel.selectedDate) {
                         viewModel.loadAvailability()
                     }
                 
@@ -420,8 +420,7 @@ struct TestDataSetupSheet: View {
     }
     
     private func addTestData() {
-        guard let businessId = authManager.currentUser?.uid,
-              let businessName = authManager.currentUser?.businessName else {
+        guard let businessId = authManager.currentUser?.uid else {
             errorMessage = "İşletme bilgileri bulunamadı"
             showErrorAlert = true
             return

@@ -599,7 +599,7 @@ struct ServiceManagementCard: View {
             
             Toggle("", isOn: .constant(service.isActive))
                 .labelsHidden()
-                .onChange(of: service.isActive) { _ in
+                .onChange(of: service.isActive) {
                     onToggle()
                 }
         }

@@ -45,10 +45,12 @@ struct AdminDashboard: View {
         db.collection("claim_requests")
             .whereField("status", isEqualTo: ClaimStatus.pending.rawValue)
             .getDocuments { snapshot, error in
-                isLoading = false
-                if let snapshot = snapshot {
-                    self.requests = snapshot.documents.compactMap { doc in
-                        try? doc.data(as: ClaimRequest.self)
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    if let snapshot = snapshot {
+                        self.requests = snapshot.documents.compactMap { doc in
+                            try? doc.data(as: ClaimRequest.self)
+                        }
                     }
                 }
             }

@@ -302,38 +302,44 @@ class ReservationManager: ObservableObject {
                 
                 if let error = error {
                     print("❌ Failed to fetch business reservations: \(error)")
-                    completion(.failure(error))
+                    DispatchQueue.main.async {
+                        completion(.failure(error))
+                    }
                     return
                 }
                 
                 guard let documents = snapshot?.documents else {
                     print("⚠️ No documents found for business")
-                    completion(.success([]))
+                    DispatchQueue.main.async {
+                        completion(.success([]))
+                    }
                     return
                 }
                 
                 print("📄 Found \(documents.count) documents")
                 
-                // Parse each document individually
-                var reservations: [Reservation] = []
-                
-                for doc in documents {
-                    do {
-                        var reservation = try doc.data(as: Reservation.self)
-                        // Manually set the document ID since custom decoder doesn't handle @DocumentID
-                        reservation.id = doc.documentID
-                        reservations.append(reservation)
-                        print("   ✅ Doc ID: \(doc.documentID) - parsed successfully")
-                    } catch {
-                        print("   ❌ Doc ID: \(doc.documentID) - failed: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    // Parse each document individually
+                    var reservations: [Reservation] = []
+                    
+                    for doc in documents {
+                        do {
+                            var reservation = try doc.data(as: Reservation.self)
+                            // Manually set the document ID since custom decoder doesn't handle @DocumentID
+                            reservation.id = doc.documentID
+                            reservations.append(reservation)
+                            print("   ✅ Doc ID: \(doc.documentID) - parsed successfully")
+                        } catch {
+                            print("   ❌ Doc ID: \(doc.documentID) - failed: \(error.localizedDescription)")
+                        }
                     }
+                    
+                    // Sort by date (ascending) on client side
+                    let sortedReservations = reservations.sorted { $0.date.dateValue() < $1.date.dateValue() }
+                    print("✅ Fetched \(sortedReservations.count) reservations for business")
+                    print(String(repeating: "🏢", count: 25) + "\n")
+                    completion(.success(sortedReservations))
                 }
-                
-                // Sort by date (ascending) on client side
-                let sortedReservations = reservations.sorted { $0.date.dateValue() < $1.date.dateValue() }
-                print("✅ Fetched \(sortedReservations.count) reservations for business")
-                print(String(repeating: "🏢", count: 25) + "\n")
-                completion(.success(sortedReservations))
             }
     }
     

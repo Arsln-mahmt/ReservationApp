@@ -23,25 +23,31 @@ class BusinessListingManager: ObservableObject {
                 
                 if let error = error {
                     print("❌ Failed to fetch business listings: \(error)")
-                    completion(.failure(error))
+                    DispatchQueue.main.async {
+                        completion(.failure(error))
+                    }
                     return
                 }
                 
                 guard let documents = snapshot?.documents else {
-                    completion(.success([]))
+                    DispatchQueue.main.async {
+                        completion(.success([]))
+                    }
                     return
                 }
                 
-                let listings = documents.compactMap { doc -> BusinessListing? in
-                    do {
-                        return try doc.data(as: BusinessListing.self)
-                    } catch {
-                        print("⚠️ Failed to decode listing \(doc.documentID): \(error)")
-                        return nil
+                DispatchQueue.main.async {
+                    let listings = documents.compactMap { doc -> BusinessListing? in
+                        do {
+                            return try doc.data(as: BusinessListing.self)
+                        } catch {
+                            print("⚠️ Failed to decode listing \(doc.documentID): \(error)")
+                            return nil
+                        }
                     }
+                    print("✅ Fetched \(listings.count) business listings")
+                    completion(.success(listings))
                 }
-                print("✅ Fetched \(listings.count) business listings")
-                completion(.success(listings))
             }
     }
     
@@ -137,22 +143,28 @@ class BusinessListingManager: ObservableObject {
                 
                 if let error = error {
                     print("❌ Failed to fetch business listing: \(error)")
-                    completion(.failure(error))
+                    DispatchQueue.main.async {
+                        completion(.failure(error))
+                    }
                     return
                 }
                 
                 guard let document = snapshot?.documents.first else {
-                    completion(.success(nil))
+                    DispatchQueue.main.async {
+                        completion(.success(nil))
+                    }
                     return
                 }
                 
-                do {
-                    let listing = try document.data(as: BusinessListing.self)
-                    print("✅ Fetched business listing: \(listing.name)")
-                    completion(.success(listing))
-                } catch {
-                    print("❌ Failed to decode business listing: \(error)")
-                    completion(.failure(error))
+                DispatchQueue.main.async {
+                    do {
+                        let listing = try document.data(as: BusinessListing.self)
+                        print("✅ Fetched business listing: \(listing.name)")
+                        completion(.success(listing))
+                    } catch {
+                        print("❌ Failed to decode business listing: \(error)")
+                        completion(.failure(error))
+                    }
                 }
             }
     }

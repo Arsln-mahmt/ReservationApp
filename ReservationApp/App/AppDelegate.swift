@@ -23,10 +23,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let settings = FirestoreSettings()
         
         // Enable offline persistence
-        settings.isPersistenceEnabled = true
-        
-        // Set cache size (100 MB)
-        settings.cacheSizeBytes = FirestoreCacheSizeUnlimited
+        settings.cacheSettings = PersistentCacheSettings()
         
         db.settings = settings
         
@@ -37,7 +34,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             print("✅ Firebase configured successfully")
             print("📱 Firebase App Name: \(app.name)")
             print("🔑 Project ID: \(app.options.projectID ?? "unknown")")
-            print("📦 Bundle ID: \(app.options.bundleID ?? "unknown")")
+            print("📦 Bundle ID: \(app.options.bundleID)")
         } else {
             print("❌ Firebase configuration FAILED!")
         }

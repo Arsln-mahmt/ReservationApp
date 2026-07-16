@@ -138,7 +138,7 @@ struct AppointmentDetailSheet: View {
                 AppointmentInfoRow(
                     icon: "hourglass",
                     title: "Süre",
-                    value: "\(appointment.duration) dakika"
+                    value: "\(appointment.displayDuration) dakika"
                 )
                 
                 if let notes = appointment.notes, !notes.isEmpty {

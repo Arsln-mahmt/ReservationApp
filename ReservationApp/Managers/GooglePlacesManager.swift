@@ -61,22 +61,24 @@ class GooglePlacesManager {
                 print("📝 Response: \(responseString.prefix(200))...")
             }
             
-            do {
-                let result = try JSONDecoder().decode(GooglePlacesResponse.self, from: data)
-                
-                if result.status == "OK" {
-                    print("✅ Found \(result.results.count) places")
-                    completion(.success(result.results))
-                } else {
-                    print("⚠️ API returned status: \(result.status)")
-                    if let errorMessage = result.error_message {
-                        print("   Error message: \(errorMessage)")
+            DispatchQueue.main.async {
+                do {
+                    let result = try JSONDecoder().decode(GooglePlacesResponse.self, from: data)
+                    
+                    if result.status == "OK" {
+                        print("✅ Found \(result.results.count) places")
+                        completion(.success(result.results))
+                    } else {
+                        print("⚠️ API returned status: \(result.status)")
+                        if let errorMessage = result.error_message {
+                            print("   Error message: \(errorMessage)")
+                        }
+                        completion(.failure(NSError(domain: "API Error: \(result.status)", code: -1)))
                     }
-                    completion(.failure(NSError(domain: "API Error: \(result.status)", code: -1)))
+                } catch {
+                    print("❌ Failed to decode: \(error.localizedDescription)")
+                    completion(.failure(error))
                 }
-            } catch {
-                print("❌ Failed to decode: \(error.localizedDescription)")
-                completion(.failure(error))
             }
         }.resume()
     }
@@ -123,22 +125,24 @@ class GooglePlacesManager {
                 print("📝 Response: \(responseString.prefix(200))...")
             }
             
-            do {
-                let result = try JSONDecoder().decode(GooglePlacesResponse.self, from: data)
-                
-                if result.status == "OK" {
-                    print("✅ Found \(result.results.count) places")
-                    completion(.success(result.results))
-                } else {
-                    print("⚠️ API returned status: \(result.status)")
-                    if let errorMessage = result.error_message {
-                        print("   Error message: \(errorMessage)")
+            DispatchQueue.main.async {
+                do {
+                    let result = try JSONDecoder().decode(GooglePlacesResponse.self, from: data)
+                    
+                    if result.status == "OK" {
+                        print("✅ Found \(result.results.count) places")
+                        completion(.success(result.results))
+                    } else {
+                        print("⚠️ API returned status: \(result.status)")
+                        if let errorMessage = result.error_message {
+                            print("   Error message: \(errorMessage)")
+                        }
+                        completion(.failure(NSError(domain: "API Error: \(result.status)", code: -1)))
                     }
-                    completion(.failure(NSError(domain: "API Error: \(result.status)", code: -1)))
+                } catch {
+                    print("❌ Failed to decode: \(error.localizedDescription)")
+                    completion(.failure(error))
                 }
-            } catch {
-                print("❌ Failed to decode: \(error.localizedDescription)")
-                completion(.failure(error))
             }
         }.resume()
     }
@@ -170,19 +174,21 @@ class GooglePlacesManager {
                 return
             }
             
-            do {
-                let result = try JSONDecoder().decode(GooglePlaceDetailsResponse.self, from: data)
-                
-                if result.status == "OK", let details = result.result {
-                    print("✅ Got place details: \(details.name)")
-                    completion(.success(details))
-                } else {
-                    print("⚠️ API returned status: \(result.status)")
-                    completion(.failure(NSError(domain: "API Error: \(result.status)", code: -1)))
+            DispatchQueue.main.async {
+                do {
+                    let result = try JSONDecoder().decode(GooglePlaceDetailsResponse.self, from: data)
+                    
+                    if result.status == "OK", let details = result.result {
+                        print("✅ Got place details: \(details.name)")
+                        completion(.success(details))
+                    } else {
+                        print("⚠️ API returned status: \(result.status)")
+                        completion(.failure(NSError(domain: "API Error: \(result.status)", code: -1)))
+                    }
+                } catch {
+                    print("❌ Failed to decode: \(error.localizedDescription)")
+                    completion(.failure(error))
                 }
-            } catch {
-                print("❌ Failed to decode: \(error.localizedDescription)")
-                completion(.failure(error))
             }
         }.resume()
     }

@@ -93,13 +93,3 @@ struct SplashScene: View {
     SplashScene()
 }
 
-
-
-
-
-
-
-
-
-
-

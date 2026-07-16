@@ -151,24 +151,30 @@ class FavoritesManager {
                 
                 if let error = error {
                     print("❌ Failed to fetch business listings: \(error)")
-                    completion(.failure(error))
+                    DispatchQueue.main.async {
+                        completion(.failure(error))
+                    }
                     return
                 }
                 
                 guard let documents = snapshot?.documents else {
-                    completion(.success([]))
+                    DispatchQueue.main.async {
+                        completion(.success([]))
+                    }
                     return
                 }
                 
-                do {
-                    let businesses = try documents.map { doc in
-                        try doc.data(as: BusinessListing.self)
+                DispatchQueue.main.async {
+                    do {
+                        let businesses = try documents.map { doc in
+                            try doc.data(as: BusinessListing.self)
+                        }
+                        print("✅ Fetched \(businesses.count) favorite businesses")
+                        completion(.success(businesses))
+                    } catch {
+                        print("❌ Failed to decode business listings: \(error)")
+                        completion(.failure(error))
                     }
-                    print("✅ Fetched \(businesses.count) favorite businesses")
-                    completion(.success(businesses))
-                } catch {
-                    print("❌ Failed to decode business listings: \(error)")
-                    completion(.failure(error))
                 }
             }
     }
@@ -178,10 +184,11 @@ class FavoritesManager {
         db.collection(Constant.usersCollection)
             .document(userId)
             .getDocument { snapshot, error in
-                if let data = snapshot?.data(),
-                   let user = try? Firestore.Decoder().decode(User.self, from: data) {
+                if let data = snapshot?.data() {
                     DispatchQueue.main.async {
-                        AuthManager.shared.updateCurrentUser(user)
+                        if let user = try? Firestore.Decoder().decode(User.self, from: data) {
+                            AuthManager.shared.updateCurrentUser(user)
+                        }
                     }
                 }
             }

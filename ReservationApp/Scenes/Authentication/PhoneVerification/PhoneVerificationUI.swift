@@ -154,7 +154,7 @@ struct PhoneVerificationUI: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
                     .opacity(0.01)
-                    .onChange(of: viewModel.verificationCode) { newValue in
+                    .onChange(of: viewModel.verificationCode) { oldValue, newValue in
                         // Limit to 6 digits
                         if newValue.count > 6 {
                             viewModel.verificationCode = String(newValue.prefix(6))

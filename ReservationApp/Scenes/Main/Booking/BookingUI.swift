@@ -82,7 +82,7 @@ struct BookingUI: View {
             DatePicker("", selection: $viewModel.selectedDate, in: Date()..., displayedComponents: .date)
                 .datePickerStyle(.graphical)
                 .tint(.primaryOrange)
-                .onChange(of: viewModel.selectedDate) { _ in
+                .onChange(of: viewModel.selectedDate) {
                     viewModel.loadAvailableTimeSlots()
                 }
         }

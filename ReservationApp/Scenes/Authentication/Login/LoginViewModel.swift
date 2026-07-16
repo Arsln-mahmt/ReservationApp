@@ -42,7 +42,7 @@ class LoginViewModel: ObservableObject {
                     print("✅ Login successful! User: \(user.name)")
                     print("✅ User ID: \(user.uid)")
                     print("✅ User type: \(user.userType)")
-                    print("✅ Phone verified: \(user.phoneVerified)")
+                    print("✅ Phone verified: \(user.phoneVerified ?? false)")
                     self?.loggedInUser = user
                     
                     // Check if phone is verified

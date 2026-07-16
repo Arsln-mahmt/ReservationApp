@@ -118,12 +118,14 @@ class VoiceServiceManager {
             }
             
             // Parse response
-            do {
-                let decoder = JSONDecoder()
-                let voiceResponse = try decoder.decode(VoiceReservationResponse.self, from: data)
-                completion(.success(voiceResponse))
-            } catch {
-                completion(.failure(error))
+            DispatchQueue.main.async {
+                do {
+                    let decoder = JSONDecoder()
+                    let voiceResponse = try decoder.decode(VoiceReservationResponse.self, from: data)
+                    completion(.success(voiceResponse))
+                } catch {
+                    completion(.failure(error))
+                }
             }
         }.resume()
     }
@@ -208,21 +210,23 @@ class VoiceServiceManager {
             }
             
             // Parse response
-            do {
-                let decoder = JSONDecoder()
-                let backendResponse = try decoder.decode(BackendReservationsResponse.self, from: data)
-                print("✅ Fetched \(backendResponse.count) reservations from backend")
-                
-                // Convert BackendReservation to Reservation with business names
-                self.convertReservationsWithBusinessNames(backendResponse.reservations) { reservations in
-                    completion(.success(reservations))
+            DispatchQueue.main.async {
+                do {
+                    let decoder = JSONDecoder()
+                    let backendResponse = try decoder.decode(BackendReservationsResponse.self, from: data)
+                    print("✅ Fetched \(backendResponse.count) reservations from backend")
+                    
+                    // Convert BackendReservation to Reservation with business names
+                    self.convertReservationsWithBusinessNames(backendResponse.reservations) { reservations in
+                        completion(.success(reservations))
+                    }
+                } catch {
+                    print("❌ Failed to decode reservations: \(error.localizedDescription)")
+                    if let dataString = String(data: data, encoding: .utf8) {
+                        print("📝 Response data: \(dataString)")
+                    }
+                    completion(.failure(error))
                 }
-            } catch {
-                print("❌ Failed to decode reservations: \(error.localizedDescription)")
-                if let dataString = String(data: data, encoding: .utf8) {
-                    print("📝 Response data: \(dataString)")
-                }
-                completion(.failure(error))
             }
         }.resume()
     }
@@ -306,21 +310,23 @@ class VoiceServiceManager {
             }
             
             // Parse response
-            do {
-                let decoder = JSONDecoder()
-                let backendResponse = try decoder.decode(BackendReservationsResponse.self, from: data)
-                print("✅ Fetched \(backendResponse.count) business reservations from backend")
-                
-                // Convert BackendReservation to Reservation with business names
-                self.convertReservationsWithBusinessNames(backendResponse.reservations) { reservations in
-                    completion(.success(reservations))
+            DispatchQueue.main.async {
+                do {
+                    let decoder = JSONDecoder()
+                    let backendResponse = try decoder.decode(BackendReservationsResponse.self, from: data)
+                    print("✅ Fetched \(backendResponse.count) business reservations from backend")
+                    
+                    // Convert BackendReservation to Reservation with business names
+                    self.convertReservationsWithBusinessNames(backendResponse.reservations) { reservations in
+                        completion(.success(reservations))
+                    }
+                } catch {
+                    print("❌ Failed to decode business reservations: \(error.localizedDescription)")
+                    if let dataString = String(data: data, encoding: .utf8) {
+                        print("📝 Response data: \(dataString)")
+                    }
+                    completion(.failure(error))
                 }
-            } catch {
-                print("❌ Failed to decode business reservations: \(error.localizedDescription)")
-                if let dataString = String(data: data, encoding: .utf8) {
-                    print("📝 Response data: \(dataString)")
-                }
-                completion(.failure(error))
             }
         }.resume()
     }

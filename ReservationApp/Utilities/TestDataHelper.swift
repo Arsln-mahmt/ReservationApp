@@ -27,6 +27,7 @@ class TestDataHelper {
                 try db.collection(Constant.servicesCollection)
                     .addDocument(from: service) { error in
                         if let error = error {
+                            print("❌ Error adding test service: \(error.localizedDescription)")
                             completion(false)
                         } else {
                             successCount += 1

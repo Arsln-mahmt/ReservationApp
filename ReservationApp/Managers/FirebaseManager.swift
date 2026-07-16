@@ -16,7 +16,7 @@ class FirebaseManager {
         print("🔥 Initializing Firestore...")
         let firestore = Firestore.firestore()
         let settings = FirestoreSettings()
-        settings.isPersistenceEnabled = true
+        settings.cacheSettings = PersistentCacheSettings()
         firestore.settings = settings
         print("✅ Firestore initialized with persistence")
         

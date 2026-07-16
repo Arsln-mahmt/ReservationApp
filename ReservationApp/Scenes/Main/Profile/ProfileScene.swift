@@ -157,7 +157,7 @@ struct ProfileScene: View {
                             .fill(LinearGradient.primaryGradient)
                             .frame(width: 100, height: 100)
                         
-                        if let imageURL = user.profileImageURL {
+                        if user.profileImageURL != nil {
                             // TODO: Load actual image
                             Text(String(user.name.prefix(1)))
                                 .font(.system(size: 40))

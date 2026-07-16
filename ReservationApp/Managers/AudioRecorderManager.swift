@@ -23,9 +23,17 @@ class AudioRecorderManager: NSObject, ObservableObject {
     
     // MARK: - Check Permission
     func checkPermission() {
-        AVAudioSession.sharedInstance().requestRecordPermission { [weak self] allowed in
-            DispatchQueue.main.async {
-                self?.hasPermission = allowed
+        if #available(iOS 17.0, *) {
+            AVAudioApplication.requestRecordPermission { [weak self] allowed in
+                DispatchQueue.main.async {
+                    self?.hasPermission = allowed
+                }
+            }
+        } else {
+            AVAudioSession.sharedInstance().requestRecordPermission { [weak self] allowed in
+                DispatchQueue.main.async {
+                    self?.hasPermission = allowed
+                }
             }
         }
     }

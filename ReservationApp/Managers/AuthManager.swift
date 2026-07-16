@@ -137,17 +137,17 @@ class AuthManager: ObservableObject {
                     return
                 }
                 
-                do {
-                    let user = try snapshot.data(as: User.self)
-                    DispatchQueue.main.async {
+                DispatchQueue.main.async {
+                    do {
+                        let user = try snapshot.data(as: User.self)
                         self?.currentUser = user
                         self?.isAuthenticated = true
                         print("✅ User data loaded: \(user.name)")
                         completion?(user)
+                    } catch {
+                        print("❌ Failed to parse user data: \(error)")
+                        print("❌ Error details: \(error.localizedDescription)")
                     }
-                } catch {
-                    print("❌ Failed to parse user data: \(error)")
-                    print("❌ Error details: \(error.localizedDescription)")
                 }
             }
     }

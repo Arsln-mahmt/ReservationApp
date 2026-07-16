@@ -28,24 +28,30 @@ class ServiceManager: ObservableObject {
                 
                 if let error = error {
                     print("❌ Failed to fetch services: \(error)")
-                    completion(.failure(error))
+                    DispatchQueue.main.async {
+                        completion(.failure(error))
+                    }
                     return
                 }
                 
                 guard let documents = snapshot?.documents else {
-                    completion(.success([]))
+                    DispatchQueue.main.async {
+                        completion(.success([]))
+                    }
                     return
                 }
                 
-                do {
-                    let services = try documents.map { doc in
-                        try doc.data(as: Service.self)
+                DispatchQueue.main.async {
+                    do {
+                        let services = try documents.map { doc in
+                            try doc.data(as: Service.self)
+                        }
+                        print("✅ Fetched \(services.count) services for business")
+                        completion(.success(services))
+                    } catch {
+                        print("❌ Failed to decode services: \(error)")
+                        completion(.failure(error))
                     }
-                    print("✅ Fetched \(services.count) services for business")
-                    completion(.success(services))
-                } catch {
-                    print("❌ Failed to decode services: \(error)")
-                    completion(.failure(error))
                 }
             }
     }

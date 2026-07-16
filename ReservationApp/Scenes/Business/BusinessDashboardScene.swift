@@ -146,6 +146,7 @@ struct BusinessDashboardScene: View {
                     isCheckingSetup = false
                     
                     if let error = error {
+                        print("❌ Error checking business setup: \(error.localizedDescription)")
                         needsSetup = true
                         return
                     }
